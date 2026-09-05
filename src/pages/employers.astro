@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro';
+import program from '../data/program.json';
+import { url } from '../lib/url';
+
+const mailto = (subject: string) => `mailto:${program.contactEmail}?subject=${encodeURIComponent(subject + ': ' + program.degree)}`;
+
+// Drawn from the six course outcomes (BRIEF §7). No labor-market statistics: any
+// added later must cite LA/OC COE, BLS OEWS, CA EDD or Lightcast (APA 7).
+const skills = [
+  { course: 'AI 40', title: 'Evaluate AI tools', detail: 'Judge whether an AI tool fits a task, what it gets wrong, and what responsible use looks like in your workplace.' },
+  { course: 'AI 45', title: 'Prompt and direct generative systems', detail: 'Construct, critique and refine prompts so generative output is fit for purpose, with bias and privacy risks understood.' },
+  { course: 'AI 60', title: 'Build assistants and agents', detail: 'Design, test and deploy conversational assistants and workflow agents on no-code and low-code platforms.' },
+  { course: 'AI 65', title: 'Produce multi-modal deliverables', detail: 'Combine text, images, audio and video in working prototypes such as captioning, cross-modal search and voice assistants.' },
+  { course: 'AI 70', title: 'Automate workflows with human oversight', detail: 'Orchestrate LLMs, retrieval-augmented generation and productivity tools into automation a person still controls.' },
+  { course: 'AI 80', title: 'Scope and deliver an integrated solution', detail: 'Take a real problem from analysis to a deployed, documented prototype with analytics and a professional presentation.' },
+];
+---
+<Base title="For employers and partners" description={`What graduates of ${program.name} at ${program.college} can do, and how employers can work with the program: advisory board, internships, and project partnerships.`} current="employers">
+  <main id="main" class="page">
+    <section class="block" style="padding-top:0">
+      <div class="wrap">
+        <span class="eyebrow">For employers and partners</span>
+        <h1>People who can put AI to work, responsibly.</h1>
+        <p class="intro">Graduates of this program are not programmers. They are the people on your team who can evaluate an AI tool, direct it, build with it on no-code platforms, automate a process without losing oversight, and explain the ethics to everyone else.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <h2>What graduates can do</h2>
+        <ul class="cards">
+          {skills.map(s => (
+            <li><span class="num">{s.course}</span><b>{s.title}</b><span>{s.detail}</span></li>
+          ))}
+        </ul>
+        <p style="color:var(--ink-2);font-size:15px;margin-top:16px;max-width:62ch">Every course ends in a concrete deliverable, and the capstone ends in a deployed, documented prototype presented to people outside the classroom. <a href={url('/courses/ai-80')} style="color:var(--ink)">See the capstone</a>.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap two">
+        <div class="prose">
+          <h2>Join the advisory board</h2>
+          <p>Career-education programs at California community colleges are shaped by the employers who hire from them. The advisory board meets to review what the program teaches, which tools it uses, and what the workforce needs next. If you hire for roles that touch AI, or expect to, we want your voice at the table.</p>
+          <p><a href={mailto('Advisory board')}>Ask about the advisory board</a></p>
+        </div>
+        <div class="prose">
+          <h2>Internships and project partnerships</h2>
+          <p>Students in AI 60, AI 65, AI 70 and the AI 80 capstone build for real problems. A partner organization can bring one: a workflow that needs automating, a service that needs an assistant, a document set that needs a grounded question-answering tool. Students scope it, build it with no-code tools, and hand over documentation.</p>
+          <p>Internships and work-based learning placements are welcome as well.</p>
+          <p><a href={mailto('Partnership')}>Propose a project or placement</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap prose">
+        <h2>Contact</h2>
+        <p>{program.facultyAuthor}, {program.facultyRole.toLowerCase()}, {program.department}, {program.college}.</p>
+        {/* TODO(vincent): replace the placeholder email in src/data/program.json. */}
+        <p><a href={mailto('Employer inquiry')}>{program.contactEmail}</a></p>
+      </div>
+    </section>
+  </main>
+</Base>

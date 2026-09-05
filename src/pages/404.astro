@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/url';
+---
+<Base title="Page not found" description="That page doesn't exist. Explore the program map or use the menu.">
+  <main id="main" class="page notfound">
+    <div class="wrap">
+      <span class="eyebrow">404</span>
+      <h1 style="margin:10px auto 0">That page isn't on the map.</h1>
+      <p class="intro" style="margin:20px auto 0">Try the menu, or go back to the start and explore from there.</p>
+      <p style="margin-top:26px"><a class="see" href={url('/')}>Explore the program</a></p>
+    </div>
+  </main>
+</Base>

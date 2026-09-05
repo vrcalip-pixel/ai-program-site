@@ -1,0 +1,114 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import program from '../data/program.json';
+import { url } from '../lib/url';
+
+const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
+const byNumber = Object.fromEntries(courses.map(c => [c.data.number, c]));
+const ladder = program.ladder;
+const degree = ladder.find(r => r.id === 'degree')!;
+
+// TODO(vincent): certificate compositions (AI Literacy = AI 40 + 45; AI Fluency = AI 40, 45, 60, 65;
+// the 18-unit certificate = all six) are assumed per BRIEF §2 — "to confirm" until Vincent confirms.
+// TODO(vincent): whether the 6-unit Certificate of Accomplishment is transcripted.
+function transcripted(r: typeof ladder[number]) {
+  if (r.id === 'literacy') return 'To be confirmed';
+  return r.transcripted ? 'Yes' : 'No';
+}
+function courseLink(num: string) {
+  const c = byNumber[num];
+  return c ? url(`/courses/${c.id}`) : null;
+}
+---
+<Base title="Pathway" description={`The credential ladder for ${program.name} at ${program.college}: a 6-unit certificate, a 12-unit certificate, an 18-unit certificate, and the 60-unit A.S. degree. No prerequisites, no code.`} current="pathway">
+  <main id="main" class="page">
+    <section class="block" style="padding-top:0">
+      <div class="wrap">
+        <span class="eyebrow">Pathway</span>
+        <h1>Four rungs. Stop at any of them with something real.</h1>
+        <p class="intro">Every course is 3 units, has no prerequisites, and uses no-code and low-code tools. The courses stack: the same six classes build toward each credential, and all of them count toward the degree.</p>
+
+        <ol class="ladder" aria-label="Credential ladder">
+          {ladder.map(r => (
+            <li class={`rung ${r.statusClass}`}>
+              <a href={`#${r.id}`} style="text-decoration:none;display:block">
+                <span class="status">{r.status}</span>
+                <div class="u">{r.units}<small>units</small></div>
+                <h3>{r.name}</h3>
+                <div class="note">{r.kind}</div>
+                {r.aidEligible && <span class="aid">Financial-aid eligible</span>}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section class="strip" aria-labelledby="nocode">
+      <div class="wrap">
+        <h2 id="nocode">No code. No prerequisites. Start anywhere in the sequence.</h2>
+        <p>This program is built for people who need to use AI well at work, not for people who want to become programmers. Every course uses no-code and low-code tools, so the work is design, judgment, and ethics rather than syntax. None of the six courses has a prerequisite. The recommended order is AI 40 first, but you can enroll in any course that fits your schedule.</p>
+        <div class="facts">
+          <div class="fact"><b>0</b><span>prerequisites across all six courses</span></div>
+          <div class="fact"><b>3 units</b><span>each; 54 lecture hours; grading is student choice</span></div>
+          <div class="fact"><b>No code</b><span>no-code and low-code platforms throughout</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <h2>Each rung in detail</h2>
+        <p class="prose" style="color:var(--ink-2);max-width:62ch;margin-bottom:28px">Status labels are the current curriculum status. Only the 18-unit certificate and the degree are eligible for federal financial aid.</p>
+
+        {ladder.filter(r => r.id !== 'degree').map(r => (
+          <article class="rungdetail" id={r.id}>
+            <header>
+              <h3>{r.name} · {r.units} units</h3>
+              <span class="kind">{r.kind} · {r.status}</span>
+            </header>
+            <p style="color:var(--ink-2);margin-top:10px;max-width:62ch">{r.summary}</p>
+            <dl>
+              <dt>Courses</dt>
+              <dd>{r.courses.map((n, i) => <>{i > 0 && ', '}{courseLink(n) ? <a href={courseLink(n)!}>{n}</a> : n}</>)}</dd>
+              <dt>Transcripted</dt><dd>{transcripted(r)}</dd>
+              <dt>Financial aid</dt><dd>{r.aidEligible ? 'Eligible (Title IV)' : 'Not aid-eligible'}</dd>
+            </dl>
+            {r.aidEligible && <p class="aidnote">This certificate is eligible for federal financial aid (Title IV).</p>}
+          </article>
+        ))}
+
+        <article class="rungdetail" id="degree">
+          <header>
+            <h3>{program.degree} · {degree.units} units</h3>
+            <span class="kind">{degree.kind} · {degree.status} by the {program.approval.body}, {program.approval.date}</span>
+          </header>
+          <p style="color:var(--ink-2);margin-top:10px;max-width:62ch">{degree.summary}</p>
+          <dl>
+            <dt>AI courses</dt>
+            <dd>{courses.map((c, i) => <>{i > 0 && ', '}<a href={url(`/courses/${c.id}`)}>{c.data.number}</a></>)} (18 units)</dd>
+            <dt>Supporting courses</dt>
+            <dd>
+              {/* TODO(vincent): only the three supporting courses with CORs on file are listed. Supply the full approved requirements. */}
+              {program.supportingCourses.map((s, i) => <>{i > 0 && ', '}{s.number} ({s.title})</>)}. Supporting courses shown are those with outlines on file.
+            </dd>
+            <dt>General education</dt><dd>{program.generalEducationUnits} units</dd>
+            <dt>Transcripted</dt><dd>Yes</dd>
+            <dt>Financial aid</dt><dd>Eligible (Title IV)</dd>
+            <dt>Full requirements</dt><dd><a href={program.catalogUrl}>See the LBCC catalog</a></dd>
+          </dl>
+          <p class="aidnote">The degree is eligible for federal financial aid (Title IV).</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap prose">
+        <h2>Recommended sequence</h2>
+        <p>{program.sequenceNote}. AI 60 and AI 65 can be taken in either order. AI 80 is the capstone and comes last.</p>
+        <p>Transfer: where a course transfers, it is CSU transferable. Ask a counselor about your specific plan, or <a href={url('/counselors')}>read the counselor page</a>.</p>
+      </div>
+    </section>
+  </main>
+</Base>

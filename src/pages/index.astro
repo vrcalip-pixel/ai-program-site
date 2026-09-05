@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+import DepthMap from '../components/DepthMap.astro';
+import program from '../data/program.json';
+---
+<Base
+  title={program.name}
+  description={`The ${program.degree} at ${program.college}: six no-code, ethics-first AI courses that stack into certificates and a degree. Explore the program.`}
+  mode="map"
+  current="home"
+>
+  <main id="main">
+    <DepthMap />
+  </main>
+</Base>

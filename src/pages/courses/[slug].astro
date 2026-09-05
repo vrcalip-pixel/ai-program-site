@@ -1,0 +1,107 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import program from '../../data/program.json';
+import { url } from '../../lib/url';
+
+export async function getStaticPaths() {
+  const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
+  return courses.map((course, i) => ({
+    params: { slug: course.id },
+    props: { course, prev: courses[i - 1] ?? null, next: courses[i + 1] ?? null },
+  }));
+}
+
+const { course, prev, next } = Astro.props;
+const { Content } = await render(course);
+const d = course.data;
+const slug = course.id;
+const pathwayHref = url(`/pathway#${d.countsToward.id}`);
+---
+<Base title={`${d.number} · ${d.title}`} description={d.description}>
+  <main id="main">
+    <header class="chero">
+      <div class="video" aria-hidden="true">
+        {d.video ? (
+          <video autoplay muted loop playsinline preload="metadata" poster={url(`/video/${slug}.jpg`)}>
+            <source src={url(`/video/${slug}.webm`)} type="video/webm" />
+            <source src={url(`/video/${slug}.mp4`)} type="video/mp4" />
+          </video>
+        ) : (
+          <span class="tag">Hero video coming soon</span>
+        )}
+      </div>
+      <div class="wrap">
+        <span class="num">{d.number} · Formerly {d.formerly}</span>
+        <h1>{d.title}</h1>
+        <div class="meta">
+          <span class="chip">{d.units} units</span>
+          <span class="chip">No prerequisites</span>
+          <span class="chip">Counts toward {d.countsToward.name}</span>
+          {d.capstone && <span class="chip hot">Capstone</span>}
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap cbody">
+      <div>
+        <div class="sec">
+          <h2>What this course is</h2>
+          <Content />
+          <div class="catalog">
+            <h3>Catalog description</h3>
+            <p>{d.catalogDescription}</p>
+            <ul>{d.outcomes.map(o => <li>{o}</li>)}</ul>
+          </div>
+        </div>
+
+        <div class="sec">
+          <h2>What you'll build</h2>
+          <ul class="build">
+            {d.build.map((b, i) => (
+              <li><i>{i + 1}</i><div><b>{b.title}</b><span>{b.detail}</span></div></li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="sec">
+          <h2>Tools you'll use</h2>
+          <div class="tools">{d.tools.map(t => <span>{t}</span>)}</div>
+          {!d.toolsConfirmed && <p style="margin-top:12px;font-size:14px">No-code and low-code tools. The exact list is set by the instructor each term.</p>}
+        </div>
+
+        {/* Student work: shipped hidden until there is student work (BRIEF §6). Do not remove. */}
+        <div class="sec" data-showcase="empty">
+          <h2>Student work</h2>
+          <div class="showcase">Project showcase opens after the first cohort. This section is designed in and hidden until then.</div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="box">
+          <dl>
+            <dt>Units</dt><dd>{d.units}</dd>
+            <dt>Hours</dt><dd>{d.hours}</dd>
+            <dt>Prerequisites</dt><dd>{d.prerequisites}</dd>
+            <dt>Recommended preparation</dt><dd>{d.recommendedPreparationConfirmed ? d.recommendedPreparation : 'To be confirmed'}</dd>
+            <dt>Grading</dt><dd>{d.grading}</dd>
+            <dt>Transfer</dt><dd>{d.transfer}</dd>
+          </dl>
+          <div class="path">
+            {next
+              ? <a href={url(`/courses/${next.id}`)}><span>Next course</span><b>{next.data.number}</b></a>
+              : <a href={url(`/courses/${prev!.id}`)}><span>Previous course</span><b>{prev!.data.number}</b></a>}
+            <a href={pathwayHref}><span>Where this fits</span><b>Pathway</b></a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <nav class="cnav" aria-label="Course navigation">
+      <div class="wrap">
+        {prev ? <a class="prev" href={url(`/courses/${prev.id}`)}><small>Previous course</small><b>{prev.data.number}</b><span>{prev.data.title}</span></a> : <a class="prev" href={url('/')}><small>Start</small><b>Map</b><span>Explore the program</span></a>}
+        {next ? <a class="next" href={url(`/courses/${next.id}`)}><small>Next course</small><b>{next.data.number}</b><span>{next.data.title}</span></a> : <a class="next" href={url('/pathway#degree')}><small>After the capstone</small><b>Degree</b><span>{program.degree}</span></a>}
+      </div>
+    </nav>
+  </main>
+</Base>

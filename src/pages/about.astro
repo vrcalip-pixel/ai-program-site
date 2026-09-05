@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro';
+import program from '../data/program.json';
+import { url } from '../lib/url';
+
+const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('About the program: ' + program.degree)}`;
+---
+<Base title="About the program" description={`Why ${program.name} exists at ${program.college}: an ethics-first, no-code program in applied AI, approved by the Chancellor's Office in March 2026.`} current="about">
+  <main id="main" class="page">
+    <section class="block" style="padding-top:0">
+      <div class="wrap">
+        <span class="eyebrow">About the program</span>
+        <h1>Why this program exists.</h1>
+        <p class="intro">AI is arriving in ordinary jobs faster than the training for it. Most people who need to use it well are not going to become programmers, and shouldn't have to. This program teaches applied AI for the workplace: how to evaluate it, direct it, build with it, and stay accountable for what it does.</p>
+      </div>
+    </section>
+
+    <section class="block ethics" aria-labelledby="ethics">
+      <div class="wrap">
+        <blockquote id="ethics">The question isn't whether AI can do it. It's whether it should, who it affects, and who's accountable when it's wrong.</blockquote>
+        <ul>
+          <li><b>Bias and fairness</b><span>Every course asks whose data trained the system, who it works less well for, and how to find out before it matters.</span></li>
+          <li><b>Privacy and consent</b><span>What goes into an AI tool, who can see it, and whether the people it describes agreed. Students learn to ask before they build.</span></li>
+          <li><b>Human oversight</b><span>Automation with a person still in the loop. Graduates design workflows where someone is accountable for the outcome, by design.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap two">
+        <div class="prose">
+          <h2>No code required</h2>
+          <p>Every course uses no-code and low-code platforms. That is a deliberate choice, not a shortcut. It puts the work where the value is for most jobs: in deciding what a system should do, testing whether it does it, and judging whether it should exist at all. None of the six courses has a prerequisite.</p>
+          <p>The program is workforce-focused and equity-minded. It is built for working adults, career changers, and students who want an applied credential they can stack over time. <a href={url('/pathway')}>See the pathway</a>.</p>
+        </div>
+        <div class="prose">
+          <h2>The program</h2>
+          <dl class="facts-dl">
+            <dt>Degree</dt><dd>{program.degree}</dd>
+            <dt>Approved</dt><dd>{program.approval.body}, {program.approval.date}</dd>
+            <dt>Faculty author</dt><dd>{program.facultyAuthor}, {program.facultyRole.toLowerCase()}</dd>
+            <dt>Department</dt><dd>{program.department}</dd>
+            <dt>Department Head</dt><dd>{program.departmentHead}</dd>
+            <dt>School Dean</dt><dd>{program.schoolDean}</dd>
+            <dt>Plan code</dt><dd>{program.codes.planCode}</dd>
+            <dt>Control #</dt><dd>{program.codes.controlNumber}</dd>
+            <dt>CIP / TOP</dt><dd>{program.codes.cip} / {program.codes.top}</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap two">
+        <div class="prose">
+          <h2>Contact</h2>
+          <p>Questions about the program, enrollment, or partnerships go to the program lead.</p>
+          {/* TODO(vincent): replace the placeholder email in src/data/program.json. */}
+          <p><a href={mailto}>{program.contactEmail}</a></p>
+        </div>
+        <div class="prose">
+          <h2>About this site</h2>
+          <p>This program site is maintained by program faculty. Official catalog information lives at <a href={program.collegeUrl}>lbcc.edu</a>. Where this site and the catalog differ, the catalog is authoritative.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</Base>

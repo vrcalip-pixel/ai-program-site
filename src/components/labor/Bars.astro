@@ -1,0 +1,37 @@
+---
+/**
+ * Horizontal bar chart as plain HTML: a grid of rows so labels wrap and text stays readable at every width.
+ * One series; the rows that matter are brass, context rows are secondary ink (emphasis, not categorical colour).
+ * `signed` draws bars from a centre line (negative to the left). Every chart has a table view.
+ */
+import type { Src } from './types';
+interface Row { name: string; value: number; label: string; emph: boolean; extra?: string; aria: string }
+interface Props { id: string; title: string; subtitle?: string; rows: Row[]; ticks: { value: number; label: string }[]; max: number; signed?: boolean; sources: Src[]; sourceNote?: string; tableHead: string[] }
+const { id, title, subtitle, rows, ticks, max, signed = false, sources, sourceNote, tableHead } = Astro.props;
+const pct = (v: number) => (signed ? 50 + (v / max) * 50 : (v / max) * 100);
+---
+<figure class="lab-chart" data-chart={id}>
+  <figcaption><b>{title}</b>{subtitle && <span>{subtitle}</span>}</figcaption>
+  <div class="lab-plot" role="group" aria-label={title}>
+    {rows.map(r => (
+      <div class={`lab-row${r.emph ? ' emph' : ''}${r.value < 0 ? ' neg' : ''}`} tabindex="0" role="img" aria-label={r.aria} data-name={r.name} data-value={r.label} data-extra={r.extra || ''}>
+        <span class="lab-name">{r.name}</span>
+        <span class="lab-track">
+          {ticks.map(t => <i class={`lab-grid${t.value === 0 && signed ? ' zero' : ''}`} style={`left:${pct(t.value)}%`}></i>)}
+          {signed
+            ? <i class="lab-fill" style={r.value < 0 ? `left:${pct(r.value)}%;width:${(Math.abs(r.value) / max) * 50}%` : `left:50%;width:${(r.value / max) * 50}%`}></i>
+            : <i class="lab-fill" style={`width:${pct(r.value)}%`}></i>}
+        </span>
+        <span class="lab-val">{r.label}</span>
+      </div>
+    ))}
+    <div class="lab-axis" aria-hidden="true"><span></span><span class="lab-track">{ticks.map(t => <i style={`left:${pct(t.value)}%`}>{t.label}</i>)}</span><span></span></div>
+  </div>
+  <div class="lab-tip" hidden aria-hidden="true"></div>
+  <table class="lab-table" hidden>
+    <caption class="sr">{title}</caption>
+    <thead><tr>{tableHead.map(h => <th scope="col">{h}</th>)}</tr></thead>
+    <tbody>{rows.map(r => <tr><th scope="row">{r.name}</th><td>{r.label}</td>{tableHead.length > 2 && <td>{r.extra ? r.extra.replace(/^[^:]+: /, '') : '—'}</td>}</tr>)}</tbody>
+  </table>
+  <p class="lab-foot"><button type="button" class="lab-toggle" aria-pressed="false">Show as table</button><span>{sources.length > 1 ? 'Sources' : 'Source'}: {sources.map((s, i) => <>{i > 0 && '; '}<a href={`#ref-${s.id}`}>{s.short}</a></>)}{sourceNote ? `, ${sourceNote}` : ''}.</span></p>
+</figure>

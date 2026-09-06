@@ -1,0 +1,21 @@
+---
+/** Share figures as meters: a big number and a track filled to that share of 100%, so four unlike surveys read at a glance without pretending to be one chart. */
+import type { Src } from './types';
+interface Item { value: number; label: string; detail?: string; source: Src }
+interface Props { title: string; items: Item[] }
+const { title, items } = Astro.props;
+---
+<div class="lab-meters" role="group" aria-label={title}>
+  <h4>{title}</h4>
+  <ul>
+    {items.map(m => (
+      <li>
+        <b class="lab-num">{m.value}%</b>
+        <span class="lab-meter" role="img" aria-label={`${m.value} percent`}><i style={`width:${m.value}%`}></i></span>
+        <span class="lab-lbl">{m.label}</span>
+        {m.detail && <span class="lab-det">{m.detail}</span>}
+        <a class="lab-src" href={`#ref-${m.source.id}`}>{m.source.short}</a>
+      </li>
+    ))}
+  </ul>
+</div>

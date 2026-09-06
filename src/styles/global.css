@@ -38,6 +38,8 @@ button{font:inherit;cursor:pointer;color:inherit;background:none;border:0}
 .nav{position:fixed;top:0;left:0;right:0;height:var(--navh);z-index:50;
   background:linear-gradient(to bottom,rgba(11,22,34,.28),rgba(11,22,34,.14));backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);
   border-bottom:1px solid rgba(238,242,245,.08)}
+/* on every page except the map, content scrolls under the bar, so it is near-solid there */
+body.page .nav{background:linear-gradient(to bottom,rgba(11,22,34,.94),rgba(11,22,34,.9));border-bottom-color:rgba(238,242,245,.1)}
 .nav .wrap{height:100%;width:100%;padding:0 22px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:20px}
 .brand{font-family:"IBM Plex Serif";font-weight:600;font-size:16px;text-decoration:none;display:flex;align-items:center;gap:10px;white-space:nowrap}
 .nav .right{display:flex;justify-content:flex-end;gap:8px}

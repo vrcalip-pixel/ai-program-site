@@ -8,12 +8,12 @@ const { current } = Astro.props;
 // Menu contents per BRIEF §3. No course links: the map is the course navigation.
 // "Request info" lives only in the menu (the separate nav button was removed to keep the landing page minimal).
 const items = [
-  { href: url('/'), label: 'Explore the map', id: 'home' },
-  { href: url('/pathway'), label: 'Pathway', id: 'pathway' },
-  { href: url('/counselors'), label: 'For counselors', id: 'counselors' },
-  { href: url('/employers'), label: 'For employers', id: 'employers' },
   { href: url('/about'), label: 'About', id: 'about' },
+  { href: url('/pathway'), label: 'Pathway', id: 'pathway' },
+  { href: url('/counselors'), label: 'Counselors', id: 'counselors' },
+  { href: url('/employers'), label: 'Employers', id: 'employers' },
   { href: url('/request-info'), label: 'Request info', id: 'request' },
+  { href: url('/'), label: 'Return to the map', id: 'home' },
 ];
 ---
 <nav class="nav" aria-label="Primary">

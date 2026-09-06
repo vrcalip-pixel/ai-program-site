@@ -50,8 +50,13 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 16. **FAQ answers to verify** — `src/data/faq.json`. Three entries carry `_todo` notes: class format (online / in person), fees, and enrollment steps. Every other answer is drawn from the site; edit any wording freely. Questions with no match are sent to the request-info form, so the form Sheet doubles as the list of questions to add.
 
+## Pass two (2026-09-06, branch `claude/pass-two-development-xsinfa`)
+
+Done in this pass: the map keeps AI 40 in frame on phones; "Where are you on the ladder?" on the pathway page; print styles for content pages; JSON-LD structured data; hands-free now serves its own runtime, has every threshold in one `TUNE` object, and a `?hf=debug` overlay for tuning (README, "Hands-free control"); the About page states the hands-free rationale (BRIEF §10).
+
+17. **Tune the gestures from real use** — open the map with `?hf=debug`, try each gesture, and adjust `TUNE` in `src/components/HandsFree.astro` (or `localStorage.hf.tune` first, no rebuild). The current values are first guesses from 2026-09-05.
+
 ## Later passes (not started)
 
-- Pass two: hands-free mode (BRIEF §10) — shipped 2026-09-05 in `src/components/HandsFree.astro` as part of the Experience button (sound, visuals and camera control together, per Vincent). Gesture thresholds are first guesses; tune from real use.
 - Labor-market framing on the employers page, only with citations (LA/OC COE, BLS OEWS, CA EDD, Lightcast; APA 7).
-- "Request info" form, if a mailto stops being enough.
+- Student work showcase on the course pages, once there is work to show (item 12).

@@ -38,7 +38,7 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 ## Request-info form
 
-15. **Connect the form to Google Sheets** — follow `FORM-SETUP.md` (about five minutes), then paste the Apps Script Web app URL into `form.endpoint` in `src/data/program.json`. Until then the form opens a prefilled email instead. Interim plan: personal Google account now; move the sheet and script to a school-facing account later by repeating the setup there.
+15. **Form backend** — connected 2026-09-05 to an Apps Script on Vincent's personal Google account (interim). Later: recreate the Sheet and script under a school-facing account by repeating `FORM-SETUP.md` there, then replace `form.endpoint` in `src/data/program.json`.
 
 ## Deployment
 

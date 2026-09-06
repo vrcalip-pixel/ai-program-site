@@ -46,6 +46,10 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 14. **GitHub Pages source** — done. Source is set to "GitHub Actions" in the repo settings; every push to `main` redeploys. Live at https://vrcalip-pixel.github.io/ai-program-site/
 
+## Ask the program
+
+16. **FAQ answers to verify** — `src/data/faq.json`. Three entries carry `_todo` notes: class format (online / in person), fees, and enrollment steps. Every other answer is drawn from the site; edit any wording freely. Questions with no match are sent to the request-info form, so the form Sheet doubles as the list of questions to add.
+
 ## Later passes (not started)
 
 - Pass two: hands-free mode (BRIEF §10) — shipped 2026-09-05 in `src/components/HandsFree.astro` as part of the Experience button (sound, visuals and camera control together, per Vincent). Gesture thresholds are first guesses; tune from real use.

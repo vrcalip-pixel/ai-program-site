@@ -273,6 +273,57 @@ body.ambient #vignette{opacity:1}
 .panel-node .close{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(238,242,245,.2);font-size:16px}
 .destinations{display:none}
 
+/* Ask the program: pill + panel, same glass as the map's node panel */
+.ask-pill{position:fixed;right:4vw;bottom:34px;z-index:45;display:inline-flex;align-items:center;gap:8px;padding:10px 16px 10px 12px;border-radius:999px;border:1px solid rgba(238,242,245,.25);background:rgba(11,22,34,.62);backdrop-filter:blur(10px);color:var(--ink);font-weight:600;font-size:14px;line-height:1.3;transition:background .2s,transform .3s cubic-bezier(.2,.8,.2,1)}
+.ask-pill:hover{background:rgba(238,242,245,.1)}
+.ask-pill svg{width:18px;height:18px;fill:none;stroke:var(--brass);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ask-pill[aria-expanded="true"]{background:rgba(238,242,245,.14)}
+body.map .ask-pill{bottom:132px}
+.ask{position:fixed;right:4vw;bottom:92px;z-index:46;width:min(440px,92vw);max-height:min(72vh,640px);display:flex;flex-direction:column;
+  background:rgba(19,36,52,.92);backdrop-filter:blur(18px);border:1px solid rgba(212,160,84,.45);border-radius:24px;box-shadow:0 0 0 1px rgba(212,160,84,.1),0 24px 60px rgba(2,5,9,.4);
+  opacity:0;transform:translateY(16px);transition:opacity .3s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.ask.open{opacity:1;transform:none}
+body.map .ask{bottom:190px}
+.ask header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:22px 22px 0}
+.ask .kind{font-size:13px;color:var(--brass);font-weight:600}
+.ask h2{font-size:22px;margin-top:4px}
+.ask .close{width:34px;height:34px;border-radius:50%;border:1px solid rgba(238,242,245,.2);font-size:16px;flex:none}
+.ask .roles{display:flex;gap:6px;padding:14px 22px 0}
+.ask .roles .ghost[aria-pressed="true"]{background:rgba(212,160,84,.18);border-color:rgba(212,160,84,.6)}
+.ask .log{flex:1;overflow:auto;padding:14px 22px;display:grid;gap:10px;align-content:start;min-height:120px}
+.ask .starters p{font-size:12.5px;color:var(--ink-2);margin-bottom:8px}
+.ask .starters{display:grid;gap:6px}
+.ask .starter{text-align:left;padding:10px 14px;border-radius:12px;background:rgba(238,242,245,.06);border:1px solid rgba(238,242,245,.1);font-size:14px;line-height:1.35;transition:background .2s}
+.ask .starter:hover{background:rgba(238,242,245,.12)}
+.ask .q{justify-self:end;max-width:85%;padding:9px 14px;border-radius:16px 16px 4px 16px;background:var(--ink);color:var(--plum);font-size:14.5px;font-weight:500}
+.ask .a{justify-self:start;max-width:95%;padding:14px 16px;border-radius:4px 16px 16px 16px;background:rgba(11,22,34,.55);border:1px solid rgba(238,242,245,.1);display:grid;gap:10px;justify-items:start}
+.ask .a p{font-size:14.5px;line-height:1.55;color:var(--ink)}
+.ask .related{display:grid;gap:4px;width:100%;padding-top:6px;border-top:1px solid rgba(238,242,245,.08)}
+.ask .related span{font-size:11.5px;color:var(--ink-2);letter-spacing:.02em}
+.ask .related button{text-align:left;font-size:13.5px;color:var(--ink-2);padding:3px 0;text-decoration:underline;text-decoration-color:rgba(238,242,245,.3);text-underline-offset:3px}
+.ask .related button:hover{color:var(--ink)}
+.ask form{display:flex;gap:8px;padding:0 22px 12px;align-items:center}
+.ask input{flex:1;min-width:0;font:inherit;font-size:15px;color:var(--ink);background:rgba(11,22,34,.6);border:1px solid rgba(238,242,245,.16);border-radius:999px;padding:10px 16px}
+.ask input:focus-visible{outline:3px solid var(--brass);outline-offset:2px;border-color:transparent}
+.ask .mic{width:40px;height:40px;border-radius:50%;border:1px solid rgba(238,242,245,.2);display:grid;place-items:center;flex:none;transition:background .2s,border-color .2s}
+.ask .mic svg{width:18px;height:18px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ask .mic[aria-pressed="true"]{border-color:var(--brass);background:rgba(212,160,84,.18);animation:asklisten 1.4s ease-in-out infinite}
+@keyframes asklisten{50%{box-shadow:0 0 0 6px rgba(212,160,84,.18)}}
+.ask .foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 22px 16px;font-size:11.5px;color:var(--ink-2)}
+.ask .speak{font-size:11.5px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.ask .speak[aria-pressed="true"]{color:var(--brass)}
+@media (max-width:820px){
+  .ask-pill{right:4vw;bottom:24px}
+  /* on the map, the hud buttons own the bottom edge: the pill becomes an icon-only circle at the right */
+  body.map .ask-pill{bottom:24px;right:4vw;width:44px;height:44px;padding:0;justify-content:center;border-radius:50%}
+  body.map .ask-pill span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  body.map .ask-pill svg{width:20px;height:20px}
+  body.map #map.focused ~ .ask-pill{opacity:0;pointer-events:none}
+  .ask,body.map .ask{right:0;left:0;bottom:0;width:auto;max-height:82vh;border-radius:24px 24px 0 0;background:rgba(19,36,52,.97)}
+  .ask header{padding-top:18px}
+}
+@media (prefers-reduced-motion:reduce){.ask .mic[aria-pressed="true"]{animation:none}}
+
 /* hands-free control (BRIEF §10) */
 /* the camera element must stay rendered (not display:none) so the browser keeps decoding frames; it is never shown */
 .hf-cam{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:0}

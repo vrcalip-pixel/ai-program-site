@@ -1,0 +1,147 @@
+---
+/**
+ * Ask the program: a guided FAQ that looks and feels like an assistant.
+ * Every answer comes from src/data/faq.json; nothing is generated, so it can never invent a fact.
+ * A question with no good match hands off to the request-info form with the question prefilled.
+ * Voice in uses the browser's speech recognition; read-aloud uses speech synthesis. Both are free and optional.
+ * The matcher is a small weighted keyword scorer (see below); it can be swapped for a language model
+ * later without changing the panel, the voice, or the FAQ file.
+ */
+import faq from '../data/faq.json';
+import { url } from '../lib/url';
+
+const entries = faq.entries.map(e => ({ ...e, link: e.link ? { ...e.link, href: url(e.link.href) } : null }));
+const data = { roles: faq.roles, entries: entries.map(({ _todo, ...rest }: any) => rest) };
+---
+<button type="button" class="ask-pill" id="askpill" aria-expanded="false" aria-controls="ask" aria-label="Ask the program: questions and answers" data-request={url('/request-info')}>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.6-1.2A9 9 0 1 0 12 3z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5"/><path d="M12 16.5h.01"/></svg>
+  <span>Ask the program</span>
+</button>
+
+<section class="ask" id="ask" role="dialog" aria-label="Ask the program" aria-modal="false" hidden>
+  <header>
+    <div><span class="kind">Ask the program</span><h2>What would you like to know?</h2></div>
+    <button type="button" class="close" id="askclose" aria-label="Close">×</button>
+  </header>
+  <div class="roles" role="group" aria-label="I am a">
+    {Object.entries(faq.roles).map(([id, r]) => <button type="button" class="ghost sm" data-role={id} aria-pressed={id === 'student' ? 'true' : 'false'}>{r.label}</button>)}
+  </div>
+  <div class="log" id="asklog" aria-live="polite">
+    <div class="starters" id="askstarters"></div>
+  </div>
+  <form id="askform" autocomplete="off">
+    <label class="sr" for="askinput">Your question</label>
+    <input id="askinput" type="text" placeholder="Type a question…" maxlength="300" />
+    <button type="button" class="mic" id="askmic" aria-pressed="false" aria-label="Ask by voice" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></button>
+    <button type="submit" class="see sm" id="asksend">Ask</button>
+  </form>
+  <div class="foot">
+    <span>Answers come from the program's own FAQ, written by program faculty. Not a college counselor.</span>
+    <button type="button" class="speak" id="askspeak" aria-pressed="false" hidden>Read answers aloud</button>
+  </div>
+</section>
+
+<script is:inline set:html={`window.__askData=${JSON.stringify(data)};`}></script>
+<script>
+  const DATA = (window as any).__askData as { roles: Record<string, { label: string; starters: string[] }>; entries: any[] };
+  const pill = document.getElementById('askpill') as HTMLButtonElement;
+  const panel = document.getElementById('ask') as HTMLElement;
+  const closeBtn = document.getElementById('askclose')!;
+  const log = document.getElementById('asklog')!;
+  const starters = document.getElementById('askstarters')!;
+  const form = document.getElementById('askform') as HTMLFormElement;
+  const input = document.getElementById('askinput') as HTMLInputElement;
+  const mic = document.getElementById('askmic') as HTMLButtonElement;
+  const speakBtn = document.getElementById('askspeak') as HTMLButtonElement;
+  const roleBtns = [...panel.querySelectorAll<HTMLButtonElement>('[data-role]')];
+  const requestInfo = pill.dataset.request || '/request-info';
+
+  // ---------- matching ----------
+  const STOP = new Set('a an the is are am i do does did can could will would should of to in on for with about what which who how it this that my me we you your be there any and or if at as into from'.split(' '));
+  const SYN: Record<string, string> = { classes: 'course', class: 'course', courses: 'course', cost: 'tuition', costs: 'tuition', price: 'tuition', fees: 'tuition', fee: 'tuition', money: 'aid', financial: 'aid', fafsa: 'aid', pell: 'aid', scholarship: 'aid', code: 'coding', programming: 'coding', python: 'coding', prereq: 'prerequisite', prereqs: 'prerequisite', prerequisites: 'prerequisite', remote: 'online', zoom: 'online', virtual: 'online', jobs: 'job', careers: 'career', hiring: 'hire', hired: 'hire', internships: 'internship', intern: 'internship', certs: 'certificate', cert: 'certificate', certificates: 'certificate', credentials: 'credential', units: 'unit', credits: 'unit', credit: 'unit', semesters: 'semester', teacher: 'instructor', professor: 'instructor', teaches: 'teach', chatgpt: 'tool', claude: 'tool', software: 'tool', webcam: 'camera', gestures: 'gesture', hands: 'hand', signup: 'enroll', register: 'enroll', registration: 'enroll', apply: 'enroll', application: 'enroll', admission: 'enroll', transferable: 'transfer', transfers: 'transfer', university: 'transfer', csu: 'transfer', uc: 'transfer', outline: 'catalog', cor: 'catalog', chatbot: 'agent', chatbots: 'agent', bots: 'agent', assistant: 'agent', multimodal: 'modal', graduates: 'graduate', grads: 'graduate', ethical: 'ethics', bias: 'ethics', privacy: 'ethics', responsible: 'ethics' };
+  const stem = (w: string) => { w = SYN[w] || w; if (w.length > 4 && w.endsWith('ies')) return w.slice(0, -3) + 'y'; if (w.length > 3 && w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1); return w; };
+  const tokens = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/[\s-]+/).filter(w => w && !STOP.has(w)).map(stem);
+  const index = DATA.entries.map(e => ({ e, main: new Set(tokens(e.q + ' ' + (e.aliases || []).join(' ') + ' ' + (e.keywords || []).join(' '))), body: new Set(tokens(e.a)) }));
+
+  function search(query: string, role: string) {
+    const q = tokens(query); if (!q.length) return [];
+    return index.map(({ e, main, body }) => {
+      let s = 0, hit = 0;
+      for (const t of q) {
+        if (main.has(t)) { s += 3; hit++; continue; }
+        let partial = false;
+        for (const m of main) if (t.length >= 4 && (m.startsWith(t) || t.startsWith(m)) && Math.min(m.length, t.length) >= 4) { partial = true; break; }
+        if (partial) { s += 1.5; hit++; continue; }
+        if (body.has(t)) { s += 0.6; hit += 0.3; }
+      }
+      if (e.roles.includes(role)) s *= 1.15;
+      return { e, s, cover: hit / q.length };
+    }).filter(r => r.s >= 3 && r.cover >= 0.4).sort((a, b) => b.s - a.s).slice(0, 3);
+  }
+
+  // ---------- panel ----------
+  let role = 'student', speakOn = false, lastAnswer = '';
+  try { const r = localStorage.getItem('ask.role'); if (r && DATA.roles[r]) role = r; speakOn = localStorage.getItem('ask.speak') === '1'; } catch { /* ignore */ }
+  function setRole(r: string) { role = r; roleBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.role === r))); try { localStorage.setItem('ask.role', r); } catch { /* ignore */ } renderStarters(); }
+  roleBtns.forEach(b => b.addEventListener('click', () => setRole(b.dataset.role!)));
+
+  function renderStarters() {
+    const ids = DATA.roles[role].starters;
+    starters.innerHTML = '<p>Common questions</p>' + ids.map(id => { const e = DATA.entries.find(x => x.id === id); return e ? `<button type="button" class="starter" data-id="${e.id}">${e.q}</button>` : ''; }).join('');
+    starters.querySelectorAll<HTMLButtonElement>('.starter').forEach(b => b.addEventListener('click', () => { const e = DATA.entries.find(x => x.id === b.dataset.id); if (e) { addQ(e.q); addA([{ e, s: 99, cover: 1 }]); } }));
+  }
+
+  const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+  function addQ(text: string) { const d = document.createElement('div'); d.className = 'q'; d.textContent = text; log.appendChild(d); }
+  function addA(results: { e: any; s: number; cover: number }[], asked = '') {
+    const d = document.createElement('div'); d.className = 'a';
+    if (results.length) {
+      const top = results[0].e; lastAnswer = top.a;
+      d.innerHTML = `<p>${esc(top.a)}</p>${top.link ? `<a class="ghost sm" href="${top.link.href}">${esc(top.link.label)} ›</a>` : ''}` +
+        (results.length > 1 ? `<div class="related"><span>Related</span>${results.slice(1).map(r => `<button type="button" data-id="${r.e.id}">${esc(r.e.q)}</button>`).join('')}</div>` : '');
+      d.querySelectorAll<HTMLButtonElement>('.related button').forEach(b => b.addEventListener('click', () => { const e = DATA.entries.find(x => x.id === b.dataset.id); if (e) { addQ(e.q); addA([{ e, s: 99, cover: 1 }]); } }));
+    } else {
+      lastAnswer = "I don't have that one yet. Send it to the program lead and you'll get a reply by email.";
+      d.innerHTML = `<p>${esc(lastAnswer)}</p><a class="see sm" href="${requestInfo}?role=${encodeURIComponent(role)}&q=${encodeURIComponent(asked)}">Ask the program lead ›</a>`;
+    }
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+    if (speakOn) speak(lastAnswer);
+  }
+
+  function ask(text: string) {
+    text = text.trim(); if (!text) return;
+    addQ(text); addA(search(text, role), text); input.value = '';
+  }
+  form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
+
+  function open() { panel.hidden = false; requestAnimationFrame(() => panel.classList.add('open')); pill.setAttribute('aria-expanded', 'true'); document.body.classList.add('asking'); setTimeout(() => input.focus(), 350); }
+  function close() { panel.classList.remove('open'); pill.setAttribute('aria-expanded', 'false'); document.body.classList.remove('asking'); stopListening(); if ('speechSynthesis' in window) speechSynthesis.cancel(); setTimeout(() => { if (!panel.classList.contains('open')) panel.hidden = true; }, 350); pill.focus(); }
+  pill.addEventListener('click', () => (panel.hidden ? open() : close()));
+  closeBtn.addEventListener('click', close);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden) close(); });
+
+  // ---------- voice in ----------
+  const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  let rec: any = null, listening = false;
+  function stopListening() { if (rec) { try { rec.stop(); } catch { /* ignore */ } } listening = false; mic.setAttribute('aria-pressed', 'false'); }
+  if (SR) {
+    mic.hidden = false;
+    mic.addEventListener('click', () => {
+      if (listening) { stopListening(); return; }
+      rec = new SR(); rec.lang = document.documentElement.lang || 'en-US'; rec.interimResults = true; rec.maxAlternatives = 1;
+      rec.onresult = (ev: any) => { const t = [...ev.results].map((r: any) => r[0].transcript).join(''); input.value = t; if (ev.results[ev.results.length - 1].isFinal) { stopListening(); ask(t); } };
+      rec.onend = () => { listening = false; mic.setAttribute('aria-pressed', 'false'); };
+      rec.onerror = () => { stopListening(); input.placeholder = 'Voice not available here. Type instead.'; };
+      try { rec.start(); listening = true; mic.setAttribute('aria-pressed', 'true'); input.placeholder = 'Listening…'; } catch { stopListening(); }
+    });
+  }
+
+  // ---------- read aloud ----------
+  function speak(text: string) { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1; speechSynthesis.speak(u); }
+  if ('speechSynthesis' in window) {
+    speakBtn.hidden = false; speakBtn.setAttribute('aria-pressed', String(speakOn));
+    speakBtn.addEventListener('click', () => { speakOn = !speakOn; speakBtn.setAttribute('aria-pressed', String(speakOn)); try { localStorage.setItem('ask.speak', speakOn ? '1' : '0'); } catch { /* ignore */ } if (speakOn && lastAnswer) speak(lastAnswer); else speechSynthesis.cancel(); });
+  }
+
+  setRole(role);
+</script>

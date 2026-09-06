@@ -138,6 +138,7 @@ const { endpoint, token } = program.form;
   const r = q.get('role'); if (r && [...role.options].some(o => o.value === r)) role.value = r;
   const topic = f.elements.namedItem('topic') as HTMLSelectElement | null;
   const t = q.get('topic'); if (t && topic && [...topic.options].some(o => o.value === t)) topic.value = t;
+  const pre = q.get('q'); if (pre) (f.elements.namedItem('message') as HTMLTextAreaElement).value = pre.slice(0, 300);   // from "Ask the program"
   sync();
   role.addEventListener('change', sync);
 

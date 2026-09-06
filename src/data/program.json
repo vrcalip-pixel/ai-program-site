@@ -4,15 +4,13 @@
   "degree": "A.S. in AI for Digital Transformation",
   "college": "Long Beach City College",
   "collegeUrl": "https://www.lbcc.edu/",
-  "catalogUrl": "https://www.lbcc.edu/catalog",
-  "_catalogUrl_todo": "TODO(vincent): confirm the exact LBCC catalog URL for the program.",
+  "catalogUrl": "https://www.lbcc.edu/post/online-college-catalog",
   "department": "Computer & Office Studies",
   "departmentHead": "Miriam Lynch",
   "schoolDean": "Koby Moridzadeh",
   "facultyAuthor": "Prof. Vincent Calip",
   "facultyRole": "Faculty author and program lead",
-  "contactEmail": "TODO-vincent@lbcc.edu",
-  "_contactEmail_todo": "TODO(vincent): replace with your LBCC email. Used for Request info (mailto) and every contact link.",
+  "contactEmail": "vcalip@lbcc.edu",
   "approval": {
     "body": "California Community Colleges Chancellor's Office",
     "date": "March 26, 2026"
@@ -31,13 +29,13 @@
       "kind": "Certificate of Accomplishment",
       "name": "AI Literacy",
       "units": 6,
-      "status": "Approved",
-      "statusClass": "approved",
+      "status": "In development",
+      "statusClass": "dev",
       "courses": ["AI 40", "AI 45"],
       "coursesConfirmed": true,
       "transcripted": false,
       "aidEligible": false,
-      "summary": "Two courses. The first place you can stop and have something real to show."
+      "summary": "Two courses. The first place you can stop and have something real to show. Expected to be offered no later than Spring 2027."
     },
     {
       "id": "fluency",

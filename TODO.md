@@ -6,25 +6,20 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 1. **Certificate composition** — confirmed by Vincent, 2026-09-05. AI Literacy = AI 40 + AI 45; AI Fluency = AI 40, 45, 60, 65; the 18-unit certificate = all six AI courses.
 
-2. **Whether the 6-unit Certificate of Accomplishment is transcripted** — `src/pages/pathway.astro` (`transcripted()`)
-   Displayed as "To be confirmed" on the Pathway page.
+2. **6-unit Certificate of Accomplishment** — status updated per Vincent, 2026-09-05: "In development", expected to be offered no later than Spring 2027 (BRIEF §2 said "Approved"; the site now follows Vincent). Still open: whether it is transcripted — `src/pages/pathway.astro` (`transcripted()`) shows "To be confirmed".
 
 3. **Approved degree requirements beyond the six AI courses** — `src/data/program.json` (`supportingCourses`), `src/pages/pathway.astro`, `src/pages/counselors.astro`
    Only COSP 38, CS 31 and COSN 250 (CORs on file) plus "general education (15 units)" are listed, with a note that these are the courses with outlines on file.
 
-4. **Recommended preparation for AI 70** — `src/content/courses/ai-70.md` (`recommendedPreparation`, `recommendedPreparationConfirmed`)
-   Displayed as "To be confirmed" until the flag is set to `true`.
+4. **Recommended preparation for AI 70** — done. AI 60, per its COR (Vincent, 2026-09-05).
 
-5. **Recommended preparation for AI 45** — `src/content/courses/ai-45.md`
-   The brief lists recommended preparation only for AI 60, 65 and 80. AI 45 is shown as "To be confirmed"; set the flag to `true` (with "None" or the right course) once checked.
+5. **Recommended preparation for AI 45** — done. None; the COR says Not Applicable (Vincent, 2026-09-05).
 
-6. **LBCC catalog URL for the program** — `src/data/program.json` (`catalogUrl`)
-   Currently `https://www.lbcc.edu/catalog`. Replace with the direct program/catalog link.
+6. **LBCC catalog URL** — done. https://www.lbcc.edu/post/online-college-catalog (Vincent, 2026-09-05).
 
 ## Content to supply
 
-7. **Contact email / where "Request info" goes** — `src/data/program.json` (`contactEmail`)
-   Placeholder `TODO-vincent@lbcc.edu` is visible on the site and is the target of every "Request info" and contact mailto. Replace with your LBCC email.
+7. **Contact email** — done. vcalip@lbcc.edu is the target of every Request info and contact link (Vincent, 2026-09-05).
 
 8. **"Tools you'll use" list, per course** — `src/content/courses/*.md` (`tools`, `toolsConfirmed`)
    Placeholder lists of no-code/low-code tools. Edit the list and set `toolsConfirmed: true` to remove the "set by the instructor each term" note.

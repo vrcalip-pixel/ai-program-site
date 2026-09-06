@@ -104,7 +104,6 @@ const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Cou
         <div class="prose">
           <h2>Contact</h2>
           <p>{program.facultyAuthor}, {program.facultyRole.toLowerCase()}, {program.department}.</p>
-          {/* TODO(vincent): replace the placeholder email in src/data/program.json. */}
           <p><a href={mailto}>{program.contactEmail}</a></p>
           <p>Department Head: {program.departmentHead}. School Dean: {program.schoolDean}.</p>
         </div>

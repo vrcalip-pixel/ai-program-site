@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
+import sitemap from '@astrojs/sitemap';
 
 // Served at the program's own domain (custom domain set in the repo's Pages settings;
 // DNS at Namecheap). The old github.io/ai-program-site address redirects here.
@@ -18,6 +19,7 @@ function stableClientNames() {
 export default defineConfig({
   site: 'https://aifordigitaltransformation.org',
   base: '/',
+  integrations: [sitemap()],
   trailingSlash: 'ignore',
   // Pages are cached for ten minutes by GitHub Pages. Inlining the CSS and using stable script names
   // means a cached page never points at an asset a later deploy has removed.

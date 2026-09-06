@@ -2,9 +2,10 @@
 import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
+import { breadcrumbs } from '../lib/schema';
 
 ---
-<Base title="About the program" description={`Why ${program.name} exists at ${program.college}: an ethics-first, no-code program in applied AI, approved by the Chancellor's Office in March 2026.`} current="about">
+<Base title="About the program" description={`Why ${program.name} exists at ${program.college}: an ethics-first, no-code program in applied AI, approved by the Chancellor's Office in March 2026.`} current="about" jsonLd={breadcrumbs([{ name: 'About the program', path: '/about' }])}>
   <main id="main" class="page">
     <section class="block" style="padding-top:0">
       <div class="wrap">

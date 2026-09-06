@@ -3,10 +3,11 @@ import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
+import { breadcrumbs } from '../lib/schema';
 
 const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
 ---
-<Base title="For counselors and advisors" description={`Everything needed to place a student in ${program.name} at ${program.college}: plan code, unit totals, recommended sequence, prerequisites, grading, transfer, and contact.`} current="counselors">
+<Base title="For counselors and advisors" description={`Everything needed to place a student in ${program.name} at ${program.college}: plan code, unit totals, recommended sequence, prerequisites, grading, transfer, and contact.`} current="counselors" jsonLd={breadcrumbs([{ name: 'For counselors and advisors', path: '/counselors' }])}>
   <main id="main" class="page">
     <section class="block" style="padding-top:0">
       <div class="wrap">

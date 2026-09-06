@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
+import { breadcrumbs } from '../lib/schema';
 
 
 // Drawn from the six course outcomes (BRIEF §7). No labor-market statistics: any
@@ -15,7 +16,7 @@ const skills = [
   { course: 'AI 80', title: 'Scope and deliver an integrated solution', detail: 'Take a real problem from analysis to a deployed, documented prototype with analytics and a professional presentation.' },
 ];
 ---
-<Base title="For employers and partners" description={`What graduates of ${program.name} at ${program.college} can do, and how employers can work with the program: advisory board, internships, and project partnerships.`} current="employers">
+<Base title="For employers and partners" description={`What graduates of ${program.name} at ${program.college} can do, and how employers can work with the program: advisory board, internships, and project partnerships.`} current="employers" jsonLd={breadcrumbs([{ name: 'For employers and partners', path: '/employers' }])}>
   <main id="main" class="page">
     <section class="block" style="padding-top:0">
       <div class="wrap">

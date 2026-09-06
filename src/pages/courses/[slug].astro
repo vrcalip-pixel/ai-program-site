@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import program from '../../data/program.json';
 import { url } from '../../lib/url';
+import { courseSchema, breadcrumbs } from '../../lib/schema';
 
 export async function getStaticPaths() {
   const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
@@ -18,7 +19,7 @@ const d = course.data;
 const slug = course.id;
 const pathwayHref = url(`/pathway#${d.countsToward.id}`);
 ---
-<Base title={`${d.number} · ${d.title}`} description={d.description}>
+<Base title={`${d.number} · ${d.title}`} description={d.description} jsonLd={[courseSchema(course), breadcrumbs([{ name: 'Pathway', path: '/pathway' }, { name: `${d.number} · ${d.title}`, path: `/courses/${slug}` }])]}>
   <main id="main">
     <header class="chero">
       <div class="video" aria-hidden="true">

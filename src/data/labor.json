@@ -1,0 +1,78 @@
+{
+  "_comment": "Labor-market figures shown on the employers page (BRIEF §7: cite LA/OC COE, BLS OEWS, CA EDD, Lightcast; APA 7; never invent statistics). Every figure names its source id below, and every source lists the page the figure was read from. Primary sites could not be opened from the build sandbox on 2026-09-06, so each number was confirmed from at least two independent search results quoting the primary page; TODO(vincent): spot-check each figure against its URL before the page goes live, then update `checked`.",
+  "checked": "2026-09-06",
+  "sources": {
+    "bls-ep": { "short": "BLS, 2026a", "apa": "U.S. Bureau of Labor Statistics. (2026a, August 27). <i>Employment projections: 2025–2035 summary</i> [News release]. https://www.bls.gov/news.release/ecopro.nr0.htm", "url": "https://www.bls.gov/news.release/ecopro.nr0.htm" },
+    "bls-ooh": { "short": "BLS, 2026b", "apa": "U.S. Bureau of Labor Statistics. (2026b). Fastest growing occupations; Management analysts; Market research analysts; Operations research analysts; Computer systems analysts. In <i>Occupational outlook handbook</i> (2025–35 projections). https://www.bls.gov/ooh/", "url": "https://www.bls.gov/ooh/fastest-growing.htm" },
+    "bls-oews": { "short": "BLS, 2026c", "apa": "U.S. Bureau of Labor Statistics. (2026c). <i>Occupational employment and wages, May 2025: Table 1. National employment and wage data by occupation</i>. https://www.bls.gov/news.release/ocwage.t01.htm", "url": "https://www.bls.gov/news.release/ocwage.t01.htm" },
+    "bls-la": { "short": "BLS, 2026d", "apa": "U.S. Bureau of Labor Statistics, Western Information Office. (2026d, July 9). <i>Occupational employment and wages in Los Angeles-Long Beach-Anaheim — May 2025</i>. https://www.bls.gov/regions/west/news-release/occupationalemploymentandwages_losangeles.htm", "url": "https://www.bls.gov/regions/west/news-release/occupationalemploymentandwages_losangeles.htm" },
+    "bls-empsit": { "short": "BLS, 2026e", "apa": "U.S. Bureau of Labor Statistics. (2026e, September 4). <i>The employment situation — August 2026</i> [News release]. https://www.bls.gov/news.release/empsit.nr0.htm", "url": "https://www.bls.gov/news.release/empsit.nr0.htm" },
+    "bls-ted": { "short": "BLS, 2026f", "apa": "U.S. Bureau of Labor Statistics. (2026f). Artificial intelligence, information technology, and employment, 2024–34. <i>The Economics Daily</i>. https://www.bls.gov/opub/ted/2026/artificial-intelligence-information-technology-and-employment-2024-34.htm", "url": "https://www.bls.gov/opub/ted/2026/artificial-intelligence-information-technology-and-employment-2024-34.htm" },
+    "edd-la": { "short": "CA EDD, n.d.", "apa": "California Employment Development Department, Labor Market Information Division. (n.d.). <i>Los Angeles County projection highlights, 2022–2032</i>. https://labormarketinfo.edd.ca.gov/file/indproj/la$_highlights.pdf", "url": "https://labormarketinfo.edd.ca.gov/file/indproj/la$_highlights.pdf" },
+    "oc-coe": { "short": "OC COE, 2026", "apa": "Orange County Center of Excellence for Labor Market Research. (2026). <i>2026 Orange County labor market overview</i>. Centers of Excellence for Labor Market Research. https://coeccc.net/region/orange-county/", "url": "https://coeccc.net/region/orange-county/" },
+    "la-coe": { "short": "LA COE, 2025", "apa": "Los Angeles Center of Excellence for Labor Market Research. (2025). <i>2025 sector profiles and sector profile dashboard; Data science occupations in Los Angeles County</i> (October 2024). Centers of Excellence for Labor Market Research. https://coeccc.net/region/los-angeles/", "url": "https://coeccc.net/region/los-angeles/" },
+    "cbre": { "short": "CBRE, 2024", "apa": "CBRE. (2024, September 4). <i>Los Angeles/Orange County is fourth largest North American market for workforce talent specializing in AI, according to CBRE's annual 'Scoring Tech Talent' report</i> [Press release]. https://www.cbre.com/press-releases/los-angeles-orange-county-is-fourth-largest-north-american-market-for-workforce", "url": "https://www.cbre.com/press-releases/los-angeles-orange-county-is-fourth-largest-north-american-market-for-workforce" },
+    "lightcast": { "short": "Magrini & Milde, 2025", "apa": "Magrini, E., & Milde, R. (2025, July 23). <i>Beyond the buzz: Developing the AI skills employers actually need</i>. Lightcast. https://lightcast.io/resources/blog/beyond-the-buzz-press-release-2025-07-23", "url": "https://lightcast.io/resources/blog/beyond-the-buzz-press-release-2025-07-23" },
+    "ai-index": { "short": "Stanford HAI, 2026", "apa": "Stanford Institute for Human-Centered Artificial Intelligence. (2026). Economy. In <i>The 2026 AI Index report</i> (Chapter 4; job-posting data from Lightcast). https://hai.stanford.edu/ai-index/2026-ai-index-report/economy", "url": "https://hai.stanford.edu/ai-index/2026-ai-index-report/economy" },
+    "mckinsey": { "short": "McKinsey, 2025", "apa": "McKinsey & Company. (2025, November). <i>The state of AI in 2025: Agents, innovation, and transformation</i>. https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai", "url": "https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai" },
+    "wef": { "short": "WEF, 2025", "apa": "World Economic Forum. (2025, January). <i>The future of jobs report 2025</i>. https://www.weforum.org/publications/the-future-of-jobs-report-2025/", "url": "https://www.weforum.org/publications/the-future-of-jobs-report-2025/" },
+    "ilo": { "short": "Gmyrek et al., 2025", "apa": "Gmyrek, P., Berg, J., Kamiński, K., Konopczyński, F., Ładna, A., Nafradi, B., Rosłaniec, K., & Troszyński, M. (2025). <i>Generative AI and jobs: A refined global index of occupational exposure</i> (ILO Working Paper 140). International Labour Organization. https://www.ilo.org/sites/default/files/2025-05/WP140_web.pdf", "url": "https://www.ilo.org/sites/default/files/2025-05/WP140_web.pdf" },
+    "pwc": { "short": "PwC, 2026", "apa": "PwC. (2026, June 15). <i>2026 global AI jobs barometer: Two futures for jobs in an AI era</i>. https://www.pwc.com/gx/en/issues/artificial-intelligence/job-barometer.html", "url": "https://www.pwc.com/gx/en/issues/artificial-intelligence/job-barometer.html" },
+    "oecd": { "short": "OECD, 2026", "apa": "OECD. (2026, June 5). <i>AI and skills: What we know so far</i>. OECD Publishing. https://www.oecd.org/en/publications/ai-and-skills_f843b352-en.html", "url": "https://www.oecd.org/en/publications/ai-and-skills_f843b352-en.html" },
+    "wti": { "short": "Microsoft & LinkedIn, 2024", "apa": "Microsoft & LinkedIn. (2024, May 8). <i>2024 work trend index annual report: AI at work is here. Now comes the hard part</i>. https://www.microsoft.com/en-us/worklab/work-trend-index/ai-at-work-is-here-now-comes-the-hard-part", "url": "https://www.microsoft.com/en-us/worklab/work-trend-index/ai-at-work-is-here-now-comes-the-hard-part" }
+  },
+  "headline": [
+    { "value": "88%", "label": "of organizations use AI regularly in at least one business function", "detail": "Global survey of executives, up from 78% a year earlier.", "source": "mckinsey" },
+    { "value": "28%", "label": "higher advertised pay in job postings that ask for AI skills", "detail": "About $18,000 a year more, from an analysis of 1.3 billion postings; 43% higher with two or more AI skills.", "source": "lightcast" },
+    { "value": "51%", "label": "of postings that ask for AI skills are outside IT and computer science", "detail": "Postings mentioning generative AI skills in non-tech roles grew about 800% from 2022 to 2024.", "source": "lightcast" },
+    { "value": "66%", "label": "of leaders say they would not hire someone without AI skills", "detail": "71% would rather hire a less experienced candidate who has AI skills than a more experienced one who does not. Survey of 31,000 people in 31 countries.", "source": "wti" }
+  ],
+  "growth": {
+    "title": "Projected U.S. employment growth, 2025 to 2035",
+    "subtitle": "Percent change in employment for occupations that use the skills this program teaches, against all occupations. Median annual wage, May 2025, where published.",
+    "unit": "%",
+    "baseline": "All occupations",
+    "rows": [
+      { "name": "Data scientists", "value": 34.6, "wage": 120230, "source": "bls-ep" },
+      { "name": "Computer and information research scientists", "value": 21.8, "source": "bls-ep" },
+      { "name": "Operations research analysts", "value": 12, "source": "bls-ooh" },
+      { "name": "Management analysts", "value": 10, "wage": 101860, "source": "bls-ooh" },
+      { "name": "Computer systems analysts", "value": 8, "wage": 105850, "source": "bls-ooh" },
+      { "name": "Market research analysts", "value": 7, "wage": 78760, "source": "bls-ooh" },
+      { "name": "All occupations", "value": 3.5, "wage": 50980, "source": "bls-ep" }
+    ],
+    "sources": ["bls-ep", "bls-ooh", "bls-oews"],
+    "note": "BLS expects AI to add demand for building models, analyzing data and integrating applications into business practice, and to reduce demand in some arts and design, sales and administrative roles. Computer and mathematical occupations are projected to grow 10.1% over 2024–34, more than three times the all-occupation rate."
+  },
+  "countries": {
+    "title": "Share of job postings that mention AI skills, 2025",
+    "subtitle": "Percent of all postings in each labor market. The United States is highlighted.",
+    "unit": "%",
+    "highlight": "United States",
+    "rows": [
+      { "name": "Singapore", "value": 4.7 },
+      { "name": "Hong Kong", "value": 3.5 },
+      { "name": "Luxembourg", "value": 3.4 },
+      { "name": "Spain", "value": 3.3 },
+      { "name": "United States", "value": 2.6 },
+      { "name": "Chile", "value": 2.4 },
+      { "name": "United Kingdom", "value": 1.9 }
+    ],
+    "sources": ["ai-index"]
+  },
+  "regional": [
+    { "value": "170,881", "label": "AI job postings in California in 2025, about 17% of the U.S. total", "detail": "The most of any state; Texas (80,547) and New York (66,029) follow.", "source": "ai-index" },
+    { "value": "4th", "label": "largest AI-specialist workforce in North America: Los Angeles and Orange County", "detail": "13,605 AI specialists, behind only San Francisco, Seattle and New York.", "source": "cbre" },
+    { "value": "$62.04", "label": "mean hourly wage for computer and mathematical occupations in Los Angeles–Long Beach–Anaheim", "detail": "Against $37.15 for all occupations in the metro area and $33.54 nationwide, May 2025.", "source": "bls-la" },
+    { "value": "1.64M", "label": "job openings projected in Los Angeles County over 2022–2032", "detail": "608,800 from growth and 1,032,000 from replacement needs; professional and business services adds 81,200 jobs.", "source": "edd-la" }
+  ],
+  "regionalNote": "Orange County's 2026 Labor Market Overview projects healthcare, the county's largest growth sector, to add 49,771 jobs by 2035, with aerospace and defense, the clean economy, life sciences and high tech adding about 8,000 more. The Los Angeles and Orange County Centers of Excellence publish the regional labor-market research California's community colleges use for program planning.",
+  "regionalSources": ["oc-coe", "la-coe"],
+  "global": [
+    { "value": "78M", "label": "net new jobs worldwide by 2030: 170 million created, 92 million displaced", "detail": "Employers expect 39% of workers' skills to change by 2030, and 63% name skills gaps as their main barrier. AI and big data is the fastest-growing skill.", "source": "wef" },
+    { "value": "1 in 4", "label": "jobs worldwide has some exposure to generative AI", "detail": "34% in high-income countries. Clerical work is the most exposed; the likely effect is transformation of jobs, not replacement.", "source": "ilo" },
+    { "value": "62%", "label": "average wage premium for AI skills, across a billion job ads on six continents", "detail": "Up from 57% the year before. Jobs that require AI skills grew 69% against 9% for all jobs.", "source": "pwc" },
+    { "value": "40%", "label": "of employers in manufacturing and finance name a lack of skills as the main barrier to adopting AI", "detail": "Over half report a growing need for highly skilled workers; over half of small and mid-sized firms do not yet use generative AI.", "source": "oecd" }
+  ],
+  "latest": { "label": "Latest U.S. jobs report, August 2026", "text": "Payrolls rose by 162,000 and unemployment held at 4.1%. The information industry lost jobs. A monthly reading, revised twice; it is context, not a trend.", "source": "bls-empsit" }
+}

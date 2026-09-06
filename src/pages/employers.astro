@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
 import { breadcrumbs } from '../lib/schema';
+import LaborDashboard from '../components/LaborDashboard.astro';
 
 
 // Drawn from the six course outcomes (BRIEF §7). No labor-market statistics: any
@@ -37,6 +38,8 @@ const skills = [
         <p style="color:var(--ink-2);font-size:15px;margin-top:16px;max-width:62ch">Every course ends in a concrete deliverable, and the capstone ends in a deployed, documented prototype presented to people outside the classroom. <a class="u" href={url('/courses/ai-80')}>See the capstone</a>.</p>
       </div>
     </section>
+
+    <LaborDashboard />
 
     <section class="block">
       <div class="wrap two">

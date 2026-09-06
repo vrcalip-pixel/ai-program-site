@@ -56,7 +56,9 @@ Done in this pass: the map keeps AI 40 in frame on phones; "Where are you on the
 
 17. **Tune the gestures from real use** — open the map with `?hf=debug`, try each gesture, and adjust `TUNE` in `src/components/HandsFree.astro` (or `localStorage.hf.tune` first, no rebuild). The current values are first guesses from 2026-09-05.
 
+18. **Spot-check the labor-market figures** — `src/data/labor.json` feeds "AI at work, by the numbers" on the employers page. Every figure names its source and the reference list links the page it came from. The build sandbox could not open bls.gov, edd.ca.gov, coeccc.net, lightcast.io, mckinsey.com, weforum.org, hai.stanford.edu, ilo.org, oecd.org or pwc.com directly (network policy), so each number was confirmed from at least two independent search results quoting the primary page. Open each reference once, confirm the number, then update `checked` in the file. Two figures to watch: BLS data scientists 34.6% (the handbook rounds it to 35%) and the AI Index country shares (Lightcast's own outlook quotes the U.S. at 2.6%; a Lightcast blog on the same index says 2.5%, up 55% on 2024).
+
 ## Later passes (not started)
 
-- Labor-market framing on the employers page, only with citations (LA/OC COE, BLS OEWS, CA EDD, Lightcast; APA 7).
+- Refresh the labor dashboard each year when BLS publishes new projections (late August), OEWS (spring) and the AI Index (April); the LA/OC Centers of Excellence reports and CA EDD projections when they update.
 - Student work showcase on the course pages, once there is work to show (item 12).

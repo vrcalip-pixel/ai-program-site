@@ -20,6 +20,7 @@ You do not need to touch components to change what the site says.
 | Hero videos | drop `ai-nn.mp4`, `ai-nn.webm`, `ai-nn.jpg` into `public/video/`, then set `video: true` in that course's frontmatter |
 | "Ask the program" answers | `src/data/faq.json` |
 | "Where are you on the ladder?" (pathway checklist) | nothing to edit: it reads `program.json` and the course files |
+| Labor-market dashboard on the employers page (figures, sources, APA 7 references) | `src/data/labor.json`; the component `src/components/LaborDashboard.astro` renders it and builds the reference list from the same file |
 | Structured data (JSON-LD for search engines) | `src/lib/schema.ts`; values come from `program.json` and the course files |
 | Hands-free gesture thresholds | `TUNE` at the top of the script in `src/components/HandsFree.astro` (see below) |
 

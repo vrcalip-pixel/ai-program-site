@@ -1,0 +1,138 @@
+---
+/**
+ * "AI at work, by the numbers": the labor-market dashboard on the employers page (BRIEF §7).
+ * Every figure comes from src/data/labor.json, where each one names its source; the APA 7 reference list
+ * at the bottom is generated from the same file, so a number can never appear without its citation.
+ * Charts are plain HTML bars rendered at build time (no chart library) so they stay readable on a phone; a small
+ * script adds hover and keyboard tooltips and a table view for each chart. Colours are the site's own tokens: brass for the marks that matter,
+ * secondary ink for context bars. Nothing here is an outcome of this program, and the copy says so.
+ */
+import labor from '../data/labor.json';
+
+type Row = { name: string; value: number; wage?: number; source?: string };
+const S = labor.sources as Record<string, { short: string; apa: string; url: string }>;
+const usedIds = new Set<string>();
+const cite = (id: string) => { usedIds.add(id); return S[id]; };
+const money = (n: number) => '$' + n.toLocaleString('en-US');
+
+// horizontal bar charts are plain HTML (a grid of rows), so labels wrap and text stays readable at every width
+function scale(rows: Row[]) {
+  const max = Math.max(...rows.map(r => r.value));
+  const top = Math.ceil(max / 5) * 5;                          // clean axis maximum
+  const step = top > 20 ? 10 : 1;
+  const ticks: number[] = []; for (let t = 0; t <= top; t += step) ticks.push(t);
+  return { top, ticks, pct: (v: number) => (v / top) * 100 };
+}
+const g = scale(labor.growth.rows as Row[]);
+const c = scale(labor.countries.rows as Row[]);
+// register sources used by charts and notes so they appear in the reference list
+[...labor.growth.sources, ...labor.countries.sources, ...labor.regionalSources, labor.latest.source, 'bls-ted'].forEach(cite);
+[...labor.headline, ...labor.regional, ...labor.global].forEach(t => cite(t.source));
+const refs = Object.keys(S).filter(id => usedIds.has(id)).map(id => ({ id, ...S[id] })).sort((a, b) => a.apa.localeCompare(b.apa));
+---
+<section class="block lab" id="labor" aria-labelledby="lab-title">
+  <div class="wrap">
+    <span class="eyebrow">Labor market</span>
+    <h2 id="lab-title">AI at work, by the numbers</h2>
+    <p class="lab-intro">What public sources say about demand for the skills this program teaches: in the United States, in California and Los Angeles–Orange County, and around the world. These are indicators from government statistics and published research, not outcomes of this program, which has not yet graduated a cohort. Each figure links to its source; the full reference list is at the end. Figures checked {new Date(labor.checked + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.</p>
+
+    <h3 class="lab-h">Employers and pay</h3>
+    <ul class="lab-tiles">
+      {labor.headline.map(t => { const s = cite(t.source); return (
+        <li><b class="lab-num">{t.value}</b><span class="lab-lbl">{t.label}</span><span class="lab-det">{t.detail}</span><a class="lab-src" href={`#ref-${t.source}`}>{s.short}</a></li>
+      ); })}
+    </ul>
+
+    <div class="lab-charts">
+      <figure class="lab-chart" data-chart="growth">
+        <figcaption><b>{labor.growth.title}</b><span>{labor.growth.subtitle}</span></figcaption>
+        <div class="lab-plot" role="group" aria-label={labor.growth.title}>
+          {(labor.growth.rows as Row[]).map(r => { const emph = r.name !== labor.growth.baseline; return (
+            <div class={`lab-row${emph ? ' emph' : ''}`} tabindex="0" role="img" aria-label={`${r.name}: ${r.value}% projected growth, 2025 to 2035${r.wage ? `; median annual wage May 2025 ${money(r.wage)}` : ''}`} data-name={r.name} data-value={`${r.value}% projected growth`} data-extra={r.wage ? `Median annual wage, May 2025: ${money(r.wage)}` : ''}>
+              <span class="lab-name">{r.name}</span>
+              <span class="lab-track">{g.ticks.map(t => <i class="lab-grid" style={`left:${g.pct(t)}%`}></i>)}<i class="lab-fill" style={`width:${g.pct(r.value)}%`}></i></span>
+              <span class="lab-val">{r.value}%</span>
+            </div>
+          ); })}
+          <div class="lab-axis" aria-hidden="true"><span></span><span class="lab-track">{g.ticks.map(t => <i style={`left:${g.pct(t)}%`}>{t}%</i>)}</span><span></span></div>
+        </div>
+        <div class="lab-tip" hidden aria-hidden="true"></div>
+        <table class="lab-table" hidden>
+          <caption class="sr">{labor.growth.title}</caption>
+          <thead><tr><th scope="col">Occupation</th><th scope="col">Growth 2025–35</th><th scope="col">Median wage, May 2025</th></tr></thead>
+          <tbody>{(labor.growth.rows as Row[]).map(b => <tr><th scope="row">{b.name}</th><td>{b.value}%</td><td>{b.wage ? money(b.wage) : '—'}</td></tr>)}</tbody>
+        </table>
+        <p class="lab-foot"><button type="button" class="lab-toggle" aria-pressed="false">Show as table</button><span>Sources: {labor.growth.sources.map((id, i) => <>{i > 0 && '; '}<a href={`#ref-${id}`}>{S[id].short}</a></>)}.</span></p>
+      </figure>
+
+      <figure class="lab-chart" data-chart="countries">
+        <figcaption><b>{labor.countries.title}</b><span>{labor.countries.subtitle}</span></figcaption>
+        <div class="lab-plot" role="group" aria-label={labor.countries.title}>
+          {(labor.countries.rows as Row[]).map(r => { const emph = r.name === labor.countries.highlight; return (
+            <div class={`lab-row${emph ? ' emph' : ''}`} tabindex="0" role="img" aria-label={`${r.name}: ${r.value}% of job postings mention AI skills, 2025`} data-name={r.name} data-value={`${r.value}% of postings`} data-extra="">
+              <span class="lab-name">{r.name}</span>
+              <span class="lab-track">{c.ticks.map(t => <i class="lab-grid" style={`left:${c.pct(t)}%`}></i>)}<i class="lab-fill" style={`width:${c.pct(r.value)}%`}></i></span>
+              <span class="lab-val">{r.value}%</span>
+            </div>
+          ); })}
+          <div class="lab-axis" aria-hidden="true"><span></span><span class="lab-track">{c.ticks.map(t => <i style={`left:${c.pct(t)}%`}>{t}%</i>)}</span><span></span></div>
+        </div>
+        <div class="lab-tip" hidden aria-hidden="true"></div>
+        <table class="lab-table" hidden>
+          <caption class="sr">{labor.countries.title}</caption>
+          <thead><tr><th scope="col">Labor market</th><th scope="col">Share of postings</th></tr></thead>
+          <tbody>{(labor.countries.rows as Row[]).map(b => <tr><th scope="row">{b.name}</th><td>{b.value}%</td></tr>)}</tbody>
+        </table>
+        <p class="lab-foot"><button type="button" class="lab-toggle" aria-pressed="false">Show as table</button><span>Source: {labor.countries.sources.map(id => <a href={`#ref-${id}`}>{S[id].short}</a>)}, job-posting data from Lightcast.</span></p>
+      </figure>
+    </div>
+    <p class="lab-note">{labor.growth.note} <a href="#ref-bls-ted">({S['bls-ted'].short})</a></p>
+
+    <h3 class="lab-h">Closer to home: California and Los Angeles–Orange County</h3>
+    <ul class="lab-tiles">
+      {labor.regional.map(t => { const s = cite(t.source); return (
+        <li><b class="lab-num">{t.value}</b><span class="lab-lbl">{t.label}</span><span class="lab-det">{t.detail}</span><a class="lab-src" href={`#ref-${t.source}`}>{s.short}</a></li>
+      ); })}
+    </ul>
+    <p class="lab-note">{labor.regionalNote} {labor.regionalSources.map((id, i) => <>{i > 0 && ' '}<a href={`#ref-${id}`}>({S[id].short})</a></>)}</p>
+
+    <h3 class="lab-h">Around the world</h3>
+    <ul class="lab-tiles">
+      {labor.global.map(t => { const s = cite(t.source); return (
+        <li><b class="lab-num">{t.value}</b><span class="lab-lbl">{t.label}</span><span class="lab-det">{t.detail}</span><a class="lab-src" href={`#ref-${t.source}`}>{s.short}</a></li>
+      ); })}
+    </ul>
+
+    <p class="lab-latest"><b>{labor.latest.label}.</b> {labor.latest.text} <a href={`#ref-${labor.latest.source}`}>({S[labor.latest.source].short})</a></p>
+
+    <div class="lab-refs" id="lab-refs">
+      <h3>References</h3>
+      <ol>
+        {refs.map(r => <li id={`ref-${r.id}`}><span set:html={r.apa} /></li>)}
+      </ol>
+      <p>APA 7 format. Where this page and a source differ, the source is right; write to the program lead and it will be corrected.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  // hover and keyboard tooltips, plus a table view, for each chart
+  document.querySelectorAll<HTMLElement>('.lab-chart').forEach(fig => {
+    const tip = fig.querySelector<HTMLElement>('.lab-tip')!;
+    const plot = fig.querySelector<HTMLElement>('.lab-plot')!;
+    const show = (bar: HTMLElement) => {
+      tip.innerHTML = `<b>${bar.dataset.name}</b><span>${bar.dataset.value}</span>${bar.dataset.extra ? `<span>${bar.dataset.extra}</span>` : ''}`;
+      const r = bar.querySelector('.lab-fill')!.getBoundingClientRect(), f = fig.getBoundingClientRect();
+      tip.hidden = false;
+      const left = Math.min(r.right - f.left + 10, f.width - tip.offsetWidth - 8);
+      tip.style.left = `${Math.max(8, left)}px`; tip.style.top = `${r.top - f.top + r.height / 2 - tip.offsetHeight / 2}px`;
+    };
+    const hide = () => { tip.hidden = true; };
+    plot.querySelectorAll<HTMLElement>('.lab-row').forEach(bar => {
+      bar.addEventListener('mouseenter', () => show(bar)); bar.addEventListener('mouseleave', hide);
+      bar.addEventListener('focus', () => show(bar)); bar.addEventListener('blur', hide);
+    });
+    const btn = fig.querySelector<HTMLButtonElement>('.lab-toggle')!, table = fig.querySelector<HTMLTableElement>('.lab-table')!;
+    btn.addEventListener('click', () => { const on = table.hidden; table.hidden = !on; plot.hidden = on; hide(); btn.setAttribute('aria-pressed', String(on)); btn.textContent = on ? 'Show as chart' : 'Show as table'; });
+  });
+</script>

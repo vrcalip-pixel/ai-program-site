@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
+import LadderCheck from '../components/LadderCheck.astro';
 
 const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
 const byNumber = Object.fromEntries(courses.map(c => [c.data.number, c]));
@@ -42,6 +43,7 @@ function courseLink(num: string) {
             </li>
           ))}
         </ol>
+        <LadderCheck />
       </div>
     </section>
 

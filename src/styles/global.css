@@ -92,7 +92,7 @@ section.block{padding:90px 0}
 .rung.dev .status{background:var(--sun);color:#1A1206}
 .rung .note{font-size:14px;color:rgba(238,242,245,.82);margin-top:12px}
 .rung .aid{display:inline-block;margin-top:12px;font-size:13px;font-weight:700;color:var(--sun)}
-@media (max-width:820px){.ladder{grid-template-columns:1fr 1fr}.rung{min-height:auto!important}}
+@media (max-width:820px){.ladder{grid-template-columns:1fr 1fr}.rung{min-height:auto!important;padding-top:56px}}
 
 /* brass strip (from prototype-map.html) */
 .strip{background:var(--sun);color:#2B1B00;padding:80px 0}

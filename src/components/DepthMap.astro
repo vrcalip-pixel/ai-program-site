@@ -16,7 +16,7 @@ import { BASE } from '../lib/url';
   <div class="hud">
     <h1>Explore the program.</h1>
     <p id="hudhint">Click a point to travel to it. Scroll to move through the courses; scroll back to return.</p>
-    <div class="row"><button type="button" class="ghost" id="recenter">Recenter</button><button type="button" class="ghost sound" id="sound" aria-pressed="false" aria-label="Experience: turn on sound and immersive visuals"><span class="lbl">Experience</span></button></div>
+    <div class="row"><button type="button" class="ghost" id="recenter">Recenter</button><button type="button" class="ghost sound" id="sound" aria-pressed="false" aria-label="Experience: turn on sound and immersive visuals"><span class="lbl">Experience</span></button><button type="button" class="ghost sound hf-btn" id="hfbtn" aria-pressed="false" aria-label="Turn on hands-free control (uses your camera; video stays on this device)" hidden><span class="lbl">Hands-free</span></button></div>
   </div>
   <div class="legend" aria-hidden="true"><span><i style="background:#D4A054"></i>Courses</span><span><i style="background:#6FA8BF"></i>Credentials</span><span><i style="background:#9FB0BE"></i>People and pages</span></div>
   <aside class="panel-node" id="panel" aria-live="polite">
@@ -221,6 +221,15 @@ sc.addEventListener('dblclick',()=>closeP());
 addEventListener('keydown',e=>{if(!document.body.classList.contains('map')||reduced)return;
   const tag=(e.target as HTMLElement).tagName;if(tag==='INPUT'||tag==='TEXTAREA')return;
   if(e.key==='Escape')closeP();if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();step(1)}if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();step(-1)}});
+
+/* hooks for hands-free control (HandsFree.astro): synthetic pointer, click, travel, tilt. Mouse, keyboard and touch keep working alongside. */
+(window as any).aidtMap={
+  pointer(x:number,y:number){ptr.x=x;ptr.y=y},
+  tilt(x:number,y:number){tilt.x=x;tilt.y=y},
+  click(x:number,y:number){ptr.x=x;ptr.y=y;if(hover)openNode(hover);else{rip.push({x,y,r:0,amp:0,life:0,born:performance.now()});if(rip.length>5)rip.shift()}},
+  step,close:closeP,
+  hovering:()=>!!hover,active:()=>!!active,
+};
 
 /* ambient sound: generated pad, off until pressed */
 const sbtn=document.getElementById('sound')!;let ac:AudioContext,master:GainNode,timer:any;

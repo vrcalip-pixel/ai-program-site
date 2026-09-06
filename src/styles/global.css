@@ -177,6 +177,10 @@ aside .path a b{color:var(--sun)}
 .prose ul{list-style:disc;padding-left:22px;color:var(--ink-2);max-width:62ch;display:grid;gap:6px}
 .prose a{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(238,242,245,.35);text-underline-offset:3px}
 .prose a:hover{text-decoration-color:var(--brass)}
+/* pill links keep their own colours wherever they sit (the .prose link rule above would otherwise win and give white on white) */
+.prose a.see,a.see,.see{color:var(--plum);text-decoration:none}
+.prose a.see:hover,a.see:hover{color:var(--plum);background:#fff}
+.prose a.ghost,a.ghost{color:var(--ink);text-decoration:none}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
 @media (max-width:820px){.two{grid-template-columns:1fr}}
 .cards{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}

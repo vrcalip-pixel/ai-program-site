@@ -3,7 +3,6 @@ import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
 
-const mailto = (subject: string) => `mailto:${program.contactEmail}?subject=${encodeURIComponent(subject + ': ' + program.degree)}`;
 
 // Drawn from the six course outcomes (BRIEF §7). No labor-market statistics: any
 // added later must cite LA/OC COE, BLS OEWS, CA EDD or Lightcast (APA 7).
@@ -43,13 +42,13 @@ const skills = [
         <div class="prose">
           <h2>Join the advisory board</h2>
           <p>Career-education programs at California community colleges are shaped by the employers who hire from them. The advisory board meets to review what the program teaches, which tools it uses, and what the workforce needs next. If you hire for roles that touch AI, or expect to, we want your voice at the table.</p>
-          <p><a href={mailto('Advisory board')}>Ask about the advisory board</a></p>
+          <p><a class="see" href={url('/request-info?role=employer&topic=advisory')}>Ask about the advisory board</a></p>
         </div>
         <div class="prose">
           <h2>Internships and project partnerships</h2>
           <p>Students in AI 60, AI 65, AI 70 and the AI 80 capstone build for real problems. A partner organization can bring one: a workflow that needs automating, a service that needs an assistant, a document set that needs a grounded question-answering tool. Students scope it, build it with no-code tools, and hand over documentation.</p>
           <p>Internships and work-based learning placements are welcome as well.</p>
-          <p><a href={mailto('Partnership')}>Propose a project or placement</a></p>
+          <p><a class="see" href={url('/request-info?role=employer&topic=project')}>Propose a project or placement</a></p>
         </div>
       </div>
     </section>
@@ -58,7 +57,8 @@ const skills = [
       <div class="wrap prose">
         <h2>Contact</h2>
         <p>{program.facultyAuthor}, {program.facultyRole.toLowerCase()}, {program.department}, {program.college}.</p>
-        <p><a href={mailto('Employer inquiry')}>{program.contactEmail}</a></p>
+        <p><a class="see" href={url('/request-info?role=employer')}>Get in touch</a></p>
+        <p style="font-size:15px">Or email <a href={`mailto:${program.contactEmail}`}>{program.contactEmail}</a>.</p>
       </div>
     </section>
   </main>

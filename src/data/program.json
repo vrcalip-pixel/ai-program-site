@@ -11,6 +11,11 @@
   "facultyAuthor": "Prof. Vincent Calip",
   "facultyRole": "Faculty author and program lead",
   "contactEmail": "vcalip@lbcc.edu",
+  "form": {
+    "_comment": "Request-info form backend (see FORM-SETUP.md). Leave endpoint empty until the Apps Script is deployed; the form then falls back to a prefilled email.",
+    "endpoint": "",
+    "token": "aidt-site-2026"
+  },
   "approval": {
     "body": "California Community Colleges Chancellor's Office",
     "date": "March 26, 2026"

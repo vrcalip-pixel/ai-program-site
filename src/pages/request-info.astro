@@ -1,0 +1,179 @@
+---
+import Base from '../layouts/Base.astro';
+import program from '../data/program.json';
+import { url } from '../lib/url';
+
+// One form for every stakeholder. The "I am a" choice swaps in the fields that role needs.
+// Submissions post to the Apps Script in scripts/apps-script/Code.gs (see FORM-SETUP.md), which
+// appends a row to a Google Sheet and emails the program lead. If the endpoint is not set or
+// unreachable, the form falls back to opening a prefilled email.
+// Preselect with ?role=student|counselor|employer|other and, for employers, &topic=advisory|project|internship|hiring|other
+const { endpoint, token } = program.form;
+---
+<Base title="Request info" description={`Ask a question or get in touch about ${program.name} at ${program.college}: for students, counselors, employers and partners.`} current="request">
+  <main id="main" class="page">
+    <section class="block" style="padding-top:0">
+      <div class="wrap">
+        <span class="eyebrow">Request info</span>
+        <h1>Tell us who you are and what you need.</h1>
+        <p class="intro">One form for students, counselors, and employers. Pick your role, and the form asks only what's relevant. The program lead reads every message and replies by email.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap two">
+        <form id="rf" class="rform" data-endpoint={endpoint} data-token={token} data-email={program.contactEmail} data-program={program.degree} novalidate>
+          <div class="field">
+            <label for="role">I am a</label>
+            <select id="role" name="role" required>
+              <option value="">Choose one</option>
+              <option value="student">Prospective or current student</option>
+              <option value="counselor">Counselor or advisor</option>
+              <option value="employer">Employer or partner</option>
+              <option value="other">Someone else</option>
+            </select>
+          </div>
+
+          <fieldset data-for="student" hidden>
+            <div class="field">
+              <label for="interest">What are you interested in?</label>
+              <select id="interest" name="interest">
+                <option value="">Not sure yet</option>
+                <option>A single course</option>
+                <option>AI Literacy certificate (6 units)</option>
+                <option>AI Fluency certificate (12 units)</option>
+                <option>AI for Digital Transformation certificate (18 units)</option>
+                <option>The A.S. degree (60 units)</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <fieldset data-for="counselor" hidden>
+            <div class="field">
+              <label for="office">College or office</label>
+              <input id="office" name="office" type="text" autocomplete="organization" />
+            </div>
+          </fieldset>
+
+          <fieldset data-for="employer" hidden>
+            <div class="field">
+              <label for="organization">Organization</label>
+              <input id="organization" name="organization" type="text" autocomplete="organization" />
+            </div>
+            <div class="field">
+              <label for="topic">I'd like to</label>
+              <select id="topic" name="topic">
+                <option value="advisory">Ask about the advisory board</option>
+                <option value="project">Propose a project partnership</option>
+                <option value="internship">Offer an internship or placement</option>
+                <option value="hiring">Hire graduates</option>
+                <option value="other">Something else</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label for="name">Your name</label>
+            <input id="name" name="name" type="text" required autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" />
+            <small>We reply here. Nothing else is done with it.</small>
+          </div>
+          <div class="field">
+            <label for="message">Your question or message</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+          </div>
+
+          {/* honeypot: hidden from people, filled by bots */}
+          <div class="hp" aria-hidden="true"><label>Website<input name="website" type="text" tabindex="-1" autocomplete="off" /></label></div>
+
+          <div class="actions">
+            <button type="submit" class="see" id="rsubmit">Send</button>
+            <span class="status" id="rstatus" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+
+        <div class="done" id="rdone" hidden>
+          <h2>Sent. Thank you.</h2>
+          <p style="color:var(--ink-2);max-width:48ch">Your message is on its way to the program lead. Expect a reply by email, usually within a few working days.</p>
+          <p style="margin-top:18px"><a class="ghost" href={url('/')}>Back to the map</a></p>
+        </div>
+
+        <aside class="prose">
+          <h2>Before you write</h2>
+          <p>Most questions are answered on the site:</p>
+          <ul>
+            <li><a href={url('/pathway')}>Pathway</a>: the four credentials, what each requires, and financial aid.</li>
+            <li><a href={url('/counselors')}>For counselors</a>: plan code, units, sequence, transfer.</li>
+            <li><a href={url('/employers')}>For employers</a>: what graduates can do, advisory board, partnerships.</li>
+          </ul>
+          <h3>Prefer email?</h3>
+          <p><a href={`mailto:${program.contactEmail}`}>{program.contactEmail}</a></p>
+          <h3>Privacy</h3>
+          <p>What you send is used only to reply to you. Please don't include student ID numbers or other sensitive details.</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  const f = document.getElementById('rf') as HTMLFormElement;
+  const role = f.elements.namedItem('role') as HTMLSelectElement;
+  const groups = [...f.querySelectorAll<HTMLFieldSetElement>('[data-for]')];
+  const status = document.getElementById('rstatus')!;
+  const btn = document.getElementById('rsubmit') as HTMLButtonElement;
+  const t0 = performance.now();
+
+  function sync() {
+    groups.forEach(g => {
+      const on = g.dataset.for === role.value;
+      g.hidden = !on;
+      g.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input,select').forEach(el => { el.disabled = !on; });
+    });
+  }
+  const q = new URLSearchParams(location.search);
+  const r = q.get('role'); if (r && [...role.options].some(o => o.value === r)) role.value = r;
+  const topic = f.elements.namedItem('topic') as HTMLSelectElement | null;
+  const t = q.get('topic'); if (t && topic && [...topic.options].some(o => o.value === t)) topic.value = t;
+  sync();
+  role.addEventListener('change', sync);
+
+  function label(sel: HTMLSelectElement | null) { return sel && !sel.disabled && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : ''; }
+
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!f.reportValidity()) return;
+    const data: Record<string, string | number> = Object.fromEntries(new FormData(f) as any);
+    data.roleLabel = label(role);
+    data.topicLabel = label(topic);
+    data.token = f.dataset.token || '';
+    data.elapsed = Math.round(performance.now() - t0);
+    data.page = location.href;
+
+    btn.disabled = true; status.textContent = 'Sending…';
+    const endpoint = f.dataset.endpoint;
+    if (endpoint) {
+      try {
+        const res = await fetch(endpoint, { method: 'POST', body: JSON.stringify(data) });
+        const j = await res.json();
+        if (j && j.ok) { f.hidden = true; document.getElementById('rdone')!.hidden = false; return; }
+      } catch (_) { /* fall through to email */ }
+    }
+    // Fallback: open the person's email app with everything filled in.
+    const lines = [
+      `Role: ${data.roleLabel}`,
+      data.interest ? `Interest: ${data.interest}` : '',
+      data.office ? `College or office: ${data.office}` : '',
+      data.organization ? `Organization: ${data.organization}` : '',
+      data.topicLabel ? `Topic: ${data.topicLabel}` : '',
+      `Name: ${data.name}`, `Email: ${data.email}`, '', String(data.message),
+    ].filter(Boolean).join('\n');
+    const subject = `${f.dataset.program}: ${data.roleLabel}${data.topicLabel ? ' · ' + data.topicLabel : ''}`;
+    location.href = `mailto:${f.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines)}`;
+    status.textContent = `Your email app should open with this message filled in. If it doesn't, email ${f.dataset.email}.`;
+    btn.disabled = false;
+  });
+</script>

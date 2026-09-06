@@ -4,23 +4,22 @@ import { url } from '../lib/url';
 
 interface Props { current?: string }
 const { current } = Astro.props;
-const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Request info: ' + program.degree)}`;
 
 // Menu contents per BRIEF §3. No course links: the map is the course navigation.
+// "Request info" lives only in the menu (the separate nav button was removed to keep the landing page minimal).
 const items = [
   { href: url('/'), label: 'Explore the map', id: 'home' },
   { href: url('/pathway'), label: 'Pathway', id: 'pathway' },
   { href: url('/counselors'), label: 'For counselors', id: 'counselors' },
   { href: url('/employers'), label: 'For employers', id: 'employers' },
   { href: url('/about'), label: 'About', id: 'about' },
-  { href: mailto, label: 'Request info', id: 'request' },
+  { href: url('/request-info'), label: 'Request info', id: 'request' },
 ];
 ---
 <nav class="nav" aria-label="Primary">
   <div class="wrap">
     <a class="brand" href={url('/')}>{program.name}</a>
     <div class="right">
-      <a class="cta" href={mailto}>Request info</a>
       <button type="button" class="menu" id="menuBtn" aria-expanded="false" aria-controls="drawer" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </div>
   </div>

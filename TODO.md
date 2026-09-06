@@ -36,6 +36,10 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 12. **Student work showcase** — `src/pages/courses/[slug].astro` ships the section hidden (`data-showcase="empty"`). Remove the attribute when there is work to show.
 
+## Request-info form
+
+15. **Connect the form to Google Sheets** — follow `FORM-SETUP.md` (about five minutes), then paste the Apps Script Web app URL into `form.endpoint` in `src/data/program.json`. Until then the form opens a prefilled email instead. Interim plan: personal Google account now; move the sheet and script to a school-facing account later by repeating the setup there.
+
 ## Deployment
 
 13. **Domain** — when registered: set `site` to the domain and `base` to `'/'` in `astro.config.mjs`, add `public/CNAME` with the domain, configure DNS, and turn on "Enforce HTTPS" in the repo's Pages settings.

@@ -3,7 +3,6 @@ import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
 
-const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('About the program: ' + program.degree)}`;
 ---
 <Base title="About the program" description={`Why ${program.name} exists at ${program.college}: an ethics-first, no-code program in applied AI, approved by the Chancellor's Office in March 2026.`} current="about">
   <main id="main" class="page">
@@ -55,7 +54,8 @@ const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Abo
         <div class="prose">
           <h2>Contact</h2>
           <p>Questions about the program, enrollment, or partnerships go to the program lead.</p>
-          <p><a href={mailto}>{program.contactEmail}</a></p>
+          <p><a class="see" href={url('/request-info')}>Request info</a></p>
+          <p style="font-size:15px">Or email <a href={`mailto:${program.contactEmail}`}>{program.contactEmail}</a>.</p>
         </div>
         <div class="prose">
           <h2>About this site</h2>

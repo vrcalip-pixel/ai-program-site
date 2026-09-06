@@ -16,6 +16,7 @@ You do not need to touch components to change what the site says.
 | Program facts (codes, people, credential ladder, contact email, catalog link) | `src/data/program.json` |
 | Pathway, counselors, employers, about pages | `src/pages/pathway.astro`, `counselors.astro`, `employers.astro`, `about.astro` |
 | The landing map's node text | `src/components/DepthMap.astro` (the `NODES` list) |
+| The request-info form backend (sheet + email) | `scripts/apps-script/Code.gs`, setup in `FORM-SETUP.md`, endpoint in `src/data/program.json` |
 | Hero videos | drop `ai-nn.mp4`, `ai-nn.webm`, `ai-nn.jpg` into `public/video/`, then set `video: true` in that course's frontmatter |
 
 Course frontmatter is validated by `src/content.config.ts`; a typo in a field name fails the build with a clear message.

@@ -1,7 +1,6 @@
 ---
 import program from '../data/program.json';
 import { url } from '../lib/url';
-const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Request info: ' + program.degree)}`;
 ---
 <footer class="site">
   <div class="wrap">
@@ -16,7 +15,7 @@ const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Req
         <li><a href={url('/counselors')}>For counselors</a></li>
         <li><a href={url('/employers')}>For employers</a></li>
         <li><a href={url('/about')}>About</a></li>
-        <li><a href={mailto}>Request info</a></li>
+        <li><a href={url('/request-info')}>Request info</a></li>
       </ul>
     </nav>
   </div>

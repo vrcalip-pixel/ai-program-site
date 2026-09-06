@@ -5,7 +5,6 @@ import program from '../data/program.json';
 import { url } from '../lib/url';
 
 const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
-const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Counselor question: ' + program.degree)}`;
 ---
 <Base title="For counselors and advisors" description={`Everything needed to place a student in ${program.name} at ${program.college}: plan code, unit totals, recommended sequence, prerequisites, grading, transfer, and contact.`} current="counselors">
   <main id="main" class="page">
@@ -104,7 +103,8 @@ const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Cou
         <div class="prose">
           <h2>Contact</h2>
           <p>{program.facultyAuthor}, {program.facultyRole.toLowerCase()}, {program.department}.</p>
-          <p><a href={mailto}>{program.contactEmail}</a></p>
+          <p><a class="see" href={url('/request-info?role=counselor')}>Ask a placement question</a></p>
+          <p style="font-size:15px">Or email <a href={`mailto:${program.contactEmail}`}>{program.contactEmail}</a>.</p>
           <p>Department Head: {program.departmentHead}. School Dean: {program.schoolDean}.</p>
         </div>
       </div>

@@ -57,10 +57,11 @@ document.getElementById('srlist')!.innerHTML=[...NODES].sort((a,b)=>a.z-b.z).map
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sc=document.getElementById('space') as HTMLCanvasElement,sx=sc.getContext('2d')!,hud=document.querySelector('.hud') as HTMLElement,panel=document.getElementById('panel')!;
 let SW=0,SH=0,stars:any[]=[],net:any[]=[],rip:any[]=[],comets:any[]=[],nextComet=0,hover:any=null,active:any=null,pathIdx=-1,amb=0;
-const F=1250;                                            // focal length: bigger = flatter perspective
-const cam={x:0,y:0,z:-1000},tgt={x:0,y:0,z:-1000},ptr={x:-1e4,y:-1e4},tilt={x:0,y:0};
-const REST={z:-1000};
-function sres(){SW=sc.width=innerWidth;SH=sc.height=innerHeight;
+const F=1000;                                            // focal length: bigger = flatter perspective (was 1250; shortened for stronger depth)
+const cam={x:0,y:0,z:-800},tgt={x:0,y:0,z:-800},ptr={x:-1e4,y:-1e4},tilt={x:0,y:0};
+const REST={z:-800};
+let DPR=1;                                               // render at device resolution (capped) so labels stay crisp
+function sres(){SW=innerWidth;SH=innerHeight;DPR=Math.min(1.5,devicePixelRatio||1);sc.width=Math.round(SW*DPR);sc.height=Math.round(SH*DPR);sc.style.width=SW+'px';sc.style.height=SH+'px';
   if(!stars.length)for(let i=0;i<(innerWidth<820?160:420);i++)stars.push({x:(Math.random()-.5)*4200,y:(Math.random()-.5)*2600,z:-1600+Math.random()*7000,r:.5+Math.random()*1.5,ph:Math.random()*6.283,sp:.35+Math.random()*.7});
   if(!net.length)for(let i=0;i<(innerWidth<820?70:170);i++){net.push({x:(Math.random()-.5)*3800,y:(Math.random()-.5)*2400,z:-1400+Math.random()*6800,ph:Math.random()*6.283})}
   fit()}
@@ -75,6 +76,9 @@ function proj(x:number,y:number,z:number){const d=z-cam.z;if(d<-F*0.55)return nu
   let px=SW/2+(x-cam.x)*s+tilt.x*(1-s)*40,py=SH/2+(y-cam.y)*s+tilt.y*(1-s)*40;
   const wv=wave(px,py,Math.min(1,s));return{x:px+wv.ox,y:py+wv.oy,s,d,near:0,z:0}}
 
+// star halos, pre-rendered once (same gradient the prototype built per star per frame; drawn scaled instead)
+const SPR=(()=>{const mk=(c1:string,c2:string)=>{const s=96,c=document.createElement('canvas');c.width=c.height=s;const g=c.getContext('2d')!;const r=s/2;const gr=g.createRadialGradient(r,r,0,r,r,r);gr.addColorStop(0,c1);gr.addColorStop(.3,c2);gr.addColorStop(1,'rgba(159,176,190,0)');g.fillStyle=gr;g.fillRect(0,0,s,s);return c};
+  return{warm:mk('rgba(241,217,166,1)','rgba(212,160,84,.34)'),cool:mk('rgba(238,242,245,1)','rgba(159,176,190,.34)')}})();
 function mix(a:string,b:string,t:number){const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);const r=Math.round(((pa>>16)&255)*(1-t)+((pb>>16)&255)*t),g=Math.round(((pa>>8)&255)*(1-t)+((pb>>8)&255)*t),bl=Math.round((pa&255)*(1-t)+(pb&255)*t);return `rgb(${r},${g},${bl})`}
 let idle=0;
 function draw(now:number){
@@ -83,18 +87,22 @@ function draw(now:number){
   amb+=((document.body.classList.contains('ambient')?1:0)-amb)*.03;
   idle+=(active?0:1-idle)*.02;const breathe=Math.sin(now/5200)*90*idle,sway=Math.sin(now/7300)*24*idle;
   cam.x+=(tgt.x+sway-cam.x)*.06;cam.y+=(tgt.y-cam.y)*.06;cam.z+=(tgt.z+breathe-cam.z)*.06;
-  sx.setTransform(1,0,0,1,0,0);sx.clearRect(0,0,SW,SH);
+  sx.setTransform(DPR,0,0,DPR,0,0);sx.clearRect(0,0,SW,SH);
   const t=now/1000;
   // depth field
   {const vg=sx.createLinearGradient(0,0,0,SH);
    vg.addColorStop(0,`rgba(${Math.round(16+amb*14)},${Math.round(30+amb*8)},${Math.round(46-amb*6)},.95)`);vg.addColorStop(.5,'rgba(11,22,34,0)');vg.addColorStop(1,`rgba(${Math.round(3+amb*10)},${Math.round(7+amb*5)},12,.92)`);
    sx.globalAlpha=1;sx.fillStyle=vg;sx.fillRect(0,0,SW,SH);
-   const bowl=sx.createRadialGradient(SW/2,SH/2,Math.min(SW,SH)*.2,SW/2,SH/2,Math.max(SW,SH)*.8);bowl.addColorStop(0,'rgba(0,0,0,0)');bowl.addColorStop(1,'rgba(2,5,9,.6)');sx.fillStyle=bowl;sx.fillRect(0,0,SW,SH);
+   // elliptical vignette that follows the viewport's aspect ratio, so it never reads as a circle on a wide screen
+   sx.save();sx.translate(SW/2,SH/2);sx.scale(SW/2,SH/2);
+   const bowl=sx.createRadialGradient(0,0,.6,0,0,1.45);bowl.addColorStop(0,'rgba(0,0,0,0)');bowl.addColorStop(.6,'rgba(2,5,9,.18)');bowl.addColorStop(1,'rgba(2,5,9,.5)');sx.fillStyle=bowl;sx.fillRect(-1,-1,2,2);sx.restore();
    if(amb>.01){const k=Math.max(SW,SH);const fs:[number,number,string,number,number][]=[[SW*.28,SH*.3,'24,84,96',.42,.7],[SW*.74,SH*.7,'190,120,48',.34,.65],[SW*.5,SH*.45,'240,190,110',.10,.45]];
      for(const [fx,fy,col,al,rr] of fs){const g=sx.createRadialGradient(fx,fy,0,fx,fy,k*rr);g.addColorStop(0,`rgba(${col},${al*amb})`);g.addColorStop(.55,`rgba(${col},${al*.3*amb})`);g.addColorStop(1,`rgba(${col},0)`);sx.fillStyle=g;sx.fillRect(0,0,SW,SH)}}}
-  // depth rings: one per course distance, converging on the degree
-  for(const id of [...PATH,'as']){const n=byId[id];const p=proj(0,-30,n.z);if(!p)continue;const R=1150*p.s*(F+n.z-REST.z)/F;
-    sx.strokeStyle=id==='as'?'#6FA8BF':'#D4A054';sx.globalAlpha=.045*Math.min(1,p.s*2.5);sx.lineWidth=1;sx.beginPath();sx.ellipse(p.x,p.y,R,R*.62,0,0,6.283);sx.stroke()}
+  // depth rings: one per course distance, a fixed world-space radius so they recede like a tunnel toward the degree.
+  // (The prototype scaled them to coincide at rest, which stacked seven rings into one visible oval.)
+  for(const id of [...PATH,'as']){const n=byId[id];const p=proj(0,-30,n.z);if(!p)continue;const R=1500*p.s;
+    const fade=Math.max(0,1-Math.max(0,R-SH*.7)/(SH*.6));                                   // dissolve as the camera passes through a ring
+    sx.strokeStyle=id==='as'?'#6FA8BF':'#D4A054';sx.globalAlpha=.06*Math.min(1,p.s*2.5)*fade;sx.lineWidth=1;sx.beginPath();sx.ellipse(p.x,p.y,R,R*.62,0,0,6.283);sx.stroke()}
   // network (deep layer): 3D points, edges to nearby points, cursor pull in screen space
   const nps:any[]=[];for(const n of net){if(n.z-cam.z<-400)n.z+=6800;if(n.z-cam.z>6400)n.z-=6800;const p=proj(n.x+Math.sin(t*.5+n.ph)*30,n.y+Math.cos(t*.4+n.ph)*30,n.z);if(!p)continue;
     const dd=Math.hypot(ptr.x-p.x,ptr.y-p.y),near=dd<220?(1-dd/220):0;if(near){p.x+=(ptr.x-p.x)*near*.35;p.y+=(ptr.y-p.y)*near*.35}p.near=near;p.z=n.z;nps.push(p)}
@@ -107,8 +115,7 @@ function draw(now:number){
     let crest=0;for(const r of rip){const b=(Math.hypot(p.x-r.x,p.y-r.y)-r.r)/110;if(b>-2&&b<2)crest+=Math.exp(-b*b)*r.life}
     const pulse=Math.min(1,.5+.5*Math.sin(t*st.sp*.55+st.ph)+crest*.9),warm=st.ph>4.7;
     const core=(st.r*.7+.35)*Math.max(.4,p.s*1.3)*(0.85+.3*pulse),halo=(4+st.r*3.5)*Math.max(.5,p.s*1.3)*(0.8+.4*pulse),vis=Math.min(1,p.s*1.8);
-    const g=sx.createRadialGradient(p.x,p.y,0,p.x,p.y,halo);g.addColorStop(0,(warm?'rgba(241,217,166,':'rgba(238,242,245,')+((.26*pulse+.06)*vis)+')');g.addColorStop(.3,(warm?'rgba(212,160,84,':'rgba(159,176,190,')+((.09*pulse+.02)*vis)+')');g.addColorStop(1,'rgba(159,176,190,0)');
-    sx.globalAlpha=1;sx.fillStyle=g;sx.beginPath();sx.arc(p.x,p.y,halo,0,6.283);sx.fill();
+    sx.globalAlpha=(.26*pulse+.06)*vis;sx.drawImage(warm?SPR.warm:SPR.cool,p.x-halo,p.y-halo,halo*2,halo*2);
     sx.fillStyle=warm?'#F7E7C6':'#EEF2F5';sx.globalAlpha=(.3+.35*pulse)*vis;sx.beginPath();sx.arc(p.x,p.y,core,0,6.283);sx.fill()}
   // comets (screen space, Experience only)
   if(amb>.5&&now>nextComet){nextComet=now+7000+Math.random()*8000;const kind=['cross','recede','approach'][Math.floor(Math.random()*3)];const fromLeft=Math.random()<.5,dir=fromLeft?1:-1;let c:any={kind,born:now,dur:1500+Math.random()*900};
@@ -140,7 +147,7 @@ function draw(now:number){
   hover=null;const order=[...NODES].sort((a,b)=>b.z-a.z);
   for(const n of order){const p=P[n.id];if(!p)continue;
     const vis=Math.min(1,p.s*2.4)*(p.d<-100?Math.max(0,1+(p.d+100)/(F*0.45)):1);       // dim when far, fade out as it passes the camera
-    const base=(n.k==='course'?11:n.k==='credential'?8:7)*Math.max(.3,p.s*1.9);
+    const base=(n.k==='course'?11:n.k==='credential'?8:7)*Math.max(.25,2.4*p.s*p.s+.6*p.s);   // steeper than linear: near nodes clearly larger than far ones
     const dd=Math.hypot(ptr.x-p.x,ptr.y-p.y);const isH=dd<Math.max(26,base*3)&&vis>.3;if(isH)hover=n;
     const isA=active&&active.id===n.id;const r=base*(isH||isA?1.5:1);
     const haze=Math.min(1,Math.max(0,(0.55-p.s)*2.2));                                   // far = cooler, dimmer
@@ -153,12 +160,13 @@ function draw(now:number){
       if(reveal>.02)n.sats.forEach((st:any,k:number)=>{const ang=now/9000+k*(6.283/n.sats.length),orb=(58+n.sats.length*5+k*6)*p.s*1.4*(0.6+.4*reveal),qx=p.x+Math.cos(ang)*orb,qy=p.y+Math.sin(ang)*orb*.55;
         sx.strokeStyle='#6FA8BF';sx.globalAlpha=.16*reveal*vis;sx.lineWidth=.8;sx.beginPath();sx.moveTo(p.x,p.y);sx.lineTo(qx,qy);sx.stroke();
         sx.fillStyle='#9FB0BE';sx.globalAlpha=.85*reveal*vis;sx.beginPath();sx.arc(qx,qy,3*Math.max(.5,p.s*1.3),0,6.283);sx.fill();
-        if(isA){sx.globalAlpha=.85;sx.fillStyle='#EEF2F5';sx.font=`500 11px "IBM Plex Sans"`;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=6;sx.fillText(st.n,qx+7,qy+4);sx.shadowBlur=0}})}
+        if(isA){sx.globalAlpha=.85;sx.fillStyle='#EEF2F5';sx.font=`500 ${Math.max(10,Math.min(16,11*p.s*1.7)).toFixed(1)}px "IBM Plex Sans"`;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=6;sx.fillText(st.n,qx+7,qy+4);sx.shadowBlur=0}})}
     // labels appear as things approach
-    const show=(p.s>.3||isH||isA)&&vis>.25;
-    if(show){const la=Math.min(1,(p.s-.22)*3)*vis;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=8;sx.shadowOffsetY=1;const fs=Math.max(11,Math.min(18,13*p.s*1.3));
-      sx.globalAlpha=(isH||isA?1:.9)*la;sx.font=`600 ${fs}px "IBM Plex Sans"`;sx.fillStyle='#EEF2F5';sx.fillText(n.n.split(' · ')[0],p.x+r+10,p.y-2);
-      sx.globalAlpha=.8*la;sx.font=`500 ${Math.max(10,fs-1)}px "IBM Plex Serif"`;sx.fillStyle='#B8C6D1';sx.fillText(n.short||n.t,p.x+r+10,p.y+14);sx.shadowBlur=0;sx.shadowOffsetY=0}
+    // labels scale with distance: large up front, small in the background, growing as the camera approaches
+    const show=(p.s>.26||isH||isA)&&vis>.25;
+    if(show){const la=Math.min(1,(p.s-.2)*3.5)*vis;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=8;sx.shadowOffsetY=1;const fs=Math.max(9,Math.min(30,34*Math.pow(p.s,1.15))),fs2=Math.max(9,fs*.85);
+      sx.globalAlpha=(isH||isA?1:.9)*la;sx.font=`600 ${fs.toFixed(1)}px "IBM Plex Sans"`;sx.fillStyle='#EEF2F5';sx.fillText(n.n.split(' · ')[0],p.x+r+10,p.y-2);
+      sx.globalAlpha=.8*la;sx.font=`500 ${fs2.toFixed(1)}px "IBM Plex Serif"`;sx.fillStyle='#B8C6D1';sx.fillText(n.short||n.t,p.x+r+10,p.y+fs2*1.15);sx.shadowBlur=0;sx.shadowOffsetY=0}
   }
   sc.style.cursor=hover?'pointer':'grab';sx.globalAlpha=1;
   {const a=wave(SW*0.18,SH*0.8,.5),bq=wave(SW*0.8,SH*0.5,.5);hud.style.transform=`translate(${(a.ox*.18).toFixed(2)}px,${(a.oy*.18).toFixed(2)}px)`;panel.style.setProperty('--wx',(bq.ox*.15).toFixed(2)+'px');panel.style.setProperty('--wy',(bq.oy*.15).toFixed(2)+'px')}

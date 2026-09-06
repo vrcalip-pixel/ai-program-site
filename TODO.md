@@ -42,7 +42,7 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 ## Deployment
 
-13. **Domain** — when registered: set `site` to the domain and `base` to `'/'` in `astro.config.mjs`, add `public/CNAME` with the domain, configure DNS, and turn on "Enforce HTTPS" in the repo's Pages settings.
+13. **Domain** — aifordigitaltransformation.org registered at Namecheap, 2026-09-05. `site`/`base` switched, `public/CNAME` added. Remaining: DNS records at Namecheap, custom domain in the repo's Pages settings, then "Enforce HTTPS" (see the domain section of README.md).
 
 14. **GitHub Pages source** — done. Source is set to "GitHub Actions" in the repo settings; every push to `main` redeploys. Live at https://vrcalip-pixel.github.io/ai-program-site/
 

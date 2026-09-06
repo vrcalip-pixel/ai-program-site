@@ -32,6 +32,6 @@ Then open the URL it prints (the site is served under `/ai-program-site/` to mat
 
 `npm run build` produces `dist/`. `npm run og` regenerates `public/og.png`.
 
-## Deployment
+## Deployment and domain
 
-`.github/workflows/deploy.yml` builds the site and publishes it to GitHub Pages. When the program domain is registered, change `site` and `base` in `astro.config.mjs`, add `public/CNAME`, and enforce HTTPS in the repository's Pages settings.
+`.github/workflows/deploy.yml` builds the site and publishes it to GitHub Pages on every push to `main`. The site lives at https://aifordigitaltransformation.org (Namecheap). GitHub Pages needs, at Namecheap: four `A` records on `@` pointing to 185.199.108.153, 185.199.109.153, 185.199.110.153 and 185.199.111.153, and a `CNAME` record on `www` pointing to `vrcalip-pixel.github.io`. In the repository's Settings → Pages, the custom domain is set to `aifordigitaltransformation.org` with "Enforce HTTPS" on. If the domain ever moves, change `site` in `astro.config.mjs` and `public/CNAME`.

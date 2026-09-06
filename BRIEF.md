@@ -31,13 +31,16 @@ These are the places a public site gets a college in trouble. Treat them as hard
 
 | Rung | Name | Units | Status label |
 |---|---|---|---|
-| Certificate of Accomplishment | AI Literacy | 6 | Approved |
+| Certificate of Accomplishment | AI Literacy | 6 | In development (expected to be offered no later than Spring 2027) |
 | Certificate of Achievement | AI Fluency | 12 | In development |
 | Certificate of Achievement | AI for Digital Transformation | 18 | Planned |
 | A.S. Degree | AI for Digital Transformation | 60 | Approved (Chancellor's Office, March 26, 2026) |
 
 - **Financial aid:** only the 18-unit certificate and the degree are Title IV eligible. The 12-unit certificate is a real transcripted credential but **must never be described as aid-eligible**. Put the aid note on the 18-unit rung only.
-- **Certificate composition (assumed, verify with Vincent):** AI Literacy = AI 40 + AI 45. AI Fluency = AI 40, 45, 60, 65. The 18-unit certificate = all six AI courses. Mark as "to confirm" in code comments until he confirms.
+- **Certificate composition (confirmed by Vincent, September 5, 2026):** AI Literacy = AI 40 + AI 45. AI Fluency = AI 40, 45, 60, 65. The 18-unit certificate = all six AI courses.
+- **Transcripted:** the 12-unit and 18-unit Certificates of Achievement and the degree are transcripted. Whether the 6-unit Certificate of Accomplishment is transcripted is still to be confirmed; the site shows "To be confirmed" until then.
+- **Catalog:** link "full requirements" and any catalog reference to https://www.lbcc.edu/post/online-college-catalog.
+- **Contact:** vcalip@lbcc.edu is the target of every "Request info" and contact link.
 - **Transfer:** do **not** advertise UC transfer for any course. CORs currently show CSU-only for AI 40/45/60/65 and UC+CSU for AI 70/80; records are being corrected. Until then, say "CSU transferable" where transfer is mentioned at all, or say nothing.
 - **Course numbers:** use `AI 40 … AI 80` only. The old `COSA` numbers appear only in the phrase "Formerly COSA nn" on course pages. Never as primary identifiers.
 - **Supporting courses for the degree:** CORs on file for COSP 38 (Database Concepts), CS 31 (Intro to Computer Science–Python), COSN 250 (Cloud Computing in AWS). Any longer list is unverified — show only these three plus "general education (15 units)" until Vincent supplies the approved requirements.
@@ -125,7 +128,7 @@ Sections in order:
 5. **Student work** — showcase section, shipped hidden (`data-showcase="empty"`) until there is student work. Do not remove; it becomes the centerpiece later.
 6. **Facts panel (sticky):** Units 3 · Hours 54 lecture · Recommended preparation · Grading: Student choice · Transfer: CSU. Links: Next course, Where this fits (Pathway).
 
-All six: 3 units, 54 lecture hours, max 40 students, Student Choice grading, no prerequisites. Recommended preparation from the CORs: AI 65 recommends AI 45; AI 80 recommends AI 70; AI 60 recommends AI 45 (noncredit twin lists AI 45 or AI 645). AI 70 — verify.
+All six: 3 units, 54 lecture hours, max 40 students, Student Choice grading, no prerequisites. Recommended preparation from the CORs: AI 65 recommends AI 45; AI 80 recommends AI 70; AI 60 recommends AI 45 (noncredit twin lists AI 45 or AI 645); AI 70 recommends AI 60. AI 40 and AI 45 have none (the AI 45 COR says Not Applicable). Confirmed by Vincent, September 5, 2026.
 
 ### Course descriptions (from the approved CORs — use verbatim in a "catalog description" block, paraphrase for the plain-spoken overview)
 

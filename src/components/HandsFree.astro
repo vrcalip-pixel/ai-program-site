@@ -57,6 +57,7 @@
   let headHist: { t: number; yaw: number; pitch: number }[] = [];
   const tiltS = { x: 0, y: 0 };
   const flashTimers: Record<string, any> = {};
+  let hideTimer: any = 0;
 
   const d = (a: any, b: any) => Math.hypot(a.x - b.x, a.y - b.y);
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -87,7 +88,9 @@
       try { [hands, face] = await make('GPU'); } catch { [hands, face] = await make('CPU'); }
       if (!document.body.classList.contains('ambient')) { starting = false; stop(); return; }   // Experience was switched off while loading
       on = true; frames = 0; warm = 0; fpsT0 = performance.now(); lastVideoTime = -1; cursorSeen = false;
-      document.body.classList.add('handsfree'); legend.hidden = false;
+      document.body.classList.add('handsfree');
+      clearTimeout(hideTimer); legend.hidden = false;
+      requestAnimationFrame(() => requestAnimationFrame(() => legend.classList.add('show')));   // float in, after the element is on screen
       loop();
     } catch (err: any) {
       const name = err && err.name;
@@ -103,7 +106,8 @@
     cam.srcObject = null;
     try { hands && hands.close(); face && face.close(); } catch { /* ignore */ }
     hands = face = null;
-    document.body.classList.remove('handsfree'); legend.hidden = true;
+    document.body.classList.remove('handsfree');
+    legend.classList.remove('show'); clearTimeout(hideTimer); hideTimer = setTimeout(() => { legend.hidden = true; }, 750);   // drift out, then leave the page
     cursor.classList.remove('on', 'pinch');
     if (map()) map().tilt(0, 0);
     if (msg) showNotice(msg);

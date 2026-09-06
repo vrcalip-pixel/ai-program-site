@@ -4,8 +4,7 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 ## Facts to confirm
 
-1. **Certificate composition** — `src/data/program.json` (`ladder[].courses`), `src/content/courses/*.md` (`countsToward`), `src/pages/pathway.astro`, `src/pages/counselors.astro`
-   Assumed per BRIEF §2: AI Literacy = AI 40 + AI 45; AI Fluency = AI 40, 45, 60, 65; the 18-unit certificate = all six AI courses. Shown as fact on the site; confirm or correct.
+1. **Certificate composition** — confirmed by Vincent, 2026-09-05. AI Literacy = AI 40 + AI 45; AI Fluency = AI 40, 45, 60, 65; the 18-unit certificate = all six AI courses.
 
 2. **Whether the 6-unit Certificate of Accomplishment is transcripted** — `src/pages/pathway.astro` (`transcripted()`)
    Displayed as "To be confirmed" on the Pathway page.

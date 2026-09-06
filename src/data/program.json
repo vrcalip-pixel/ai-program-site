@@ -34,7 +34,7 @@
       "status": "Approved",
       "statusClass": "approved",
       "courses": ["AI 40", "AI 45"],
-      "coursesConfirmed": false,
+      "coursesConfirmed": true,
       "transcripted": false,
       "aidEligible": false,
       "summary": "Two courses. The first place you can stop and have something real to show."
@@ -47,7 +47,7 @@
       "status": "In development",
       "statusClass": "dev",
       "courses": ["AI 40", "AI 45", "AI 60", "AI 65"],
-      "coursesConfirmed": false,
+      "coursesConfirmed": true,
       "transcripted": true,
       "aidEligible": false,
       "summary": "Four courses, transcripted. Currently moving through curriculum review."
@@ -60,7 +60,7 @@
       "status": "Planned",
       "statusClass": "",
       "courses": ["AI 40", "AI 45", "AI 60", "AI 65", "AI 70", "AI 80"],
-      "coursesConfirmed": false,
+      "coursesConfirmed": true,
       "transcripted": true,
       "aidEligible": true,
       "summary": "All six AI courses. The financial-aid eligible tier."

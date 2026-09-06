@@ -9,8 +9,8 @@ const byNumber = Object.fromEntries(courses.map(c => [c.data.number, c]));
 const ladder = program.ladder;
 const degree = ladder.find(r => r.id === 'degree')!;
 
-// TODO(vincent): certificate compositions (AI Literacy = AI 40 + 45; AI Fluency = AI 40, 45, 60, 65;
-// the 18-unit certificate = all six) are assumed per BRIEF §2 — "to confirm" until Vincent confirms.
+// Certificate compositions confirmed by Vincent (2026-09-05): AI Literacy = AI 40 + 45;
+// AI Fluency = AI 40, 45, 60, 65; the 18-unit certificate = all six AI courses.
 // TODO(vincent): whether the 6-unit Certificate of Accomplishment is transcripted.
 function transcripted(r: typeof ladder[number]) {
   if (r.id === 'literacy') return 'To be confirmed';

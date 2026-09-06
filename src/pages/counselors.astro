@@ -52,7 +52,6 @@ const mailto = `mailto:${program.contactEmail}?subject=${encodeURIComponent('Cou
           <table class="data">
             <thead><tr><th>Credential</th><th>Type</th><th>Units</th><th>Courses</th><th>Status</th><th>Financial aid</th></tr></thead>
             <tbody>
-              {/* TODO(vincent): certificate compositions are assumed (BRIEF §2) — to confirm. */}
               {program.ladder.map(r => (
                 <tr>
                   <td><a href={url(`/pathway#${r.id}`)}>{r.name}</a></td>

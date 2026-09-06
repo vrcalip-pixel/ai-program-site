@@ -137,7 +137,37 @@ const data = { roles: faq.roles, entries: entries.map(({ _todo, ...rest }: any) 
   }
 
   // ---------- read aloud ----------
-  function speak(text: string) { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1; speechSynthesis.speak(u); }
+  // Read-aloud: pick the most natural English voice the device offers (browser defaults are usually the oldest,
+  // most robotic one), then read sentence by sentence so the cadence has real pauses.
+  let voice: SpeechSynthesisVoice | null = null;
+  function pickVoice() {
+    if (!('speechSynthesis' in window)) return;
+    const all = speechSynthesis.getVoices().filter(v => /^en(-|_)?(US|GB|AU|CA|IE|NZ)?/i.test(v.lang) || v.lang.toLowerCase().startsWith('en'));
+    if (!all.length) return;
+    const tiers: ((v: SpeechSynthesisVoice) => boolean)[] = [
+      v => /natural|neural|premium|enhanced/i.test(v.name) && /en-?US/i.test(v.lang),   // Microsoft Natural, Apple Premium/Enhanced
+      v => /natural|neural|premium|enhanced/i.test(v.name),
+      v => /google us english/i.test(v.name),                                            // Chrome's server voice
+      v => /siri|samantha|ava|allison|zoe|aria|jenny|guy|libby|sonia/i.test(v.name),
+      v => /en-?US/i.test(v.lang) && !v.localService,
+      v => /en-?US/i.test(v.lang),
+      () => true,
+    ];
+    for (const t of tiers) { const v = all.find(t); if (v) { voice = v; return; } }
+  }
+  if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); }
+  function speak(text: string) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const clean = text.replace(/·/g, ',').replace(/\s+/g, ' ').trim();
+    const sentences = clean.match(/[^.!?;:]+[.!?;:]?/g) || [clean];
+    sentences.map(s => s.trim()).filter(Boolean).forEach(s => {
+      const u = new SpeechSynthesisUtterance(s);
+      if (voice) u.voice = voice;
+      u.lang = voice?.lang || 'en-US'; u.rate = 0.96; u.pitch = 1.0; u.volume = 1;
+      speechSynthesis.speak(u);
+    });
+  }
   if ('speechSynthesis' in window) {
     speakBtn.hidden = false; speakBtn.setAttribute('aria-pressed', String(speakOn));
     speakBtn.addEventListener('click', () => { speakOn = !speakOn; speakBtn.setAttribute('aria-pressed', String(speakOn)); try { localStorage.setItem('ask.speak', speakOn ? '1' : '0'); } catch { /* ignore */ } if (speakOn && lastAnswer) speak(lastAnswer); else speechSynthesis.cancel(); });

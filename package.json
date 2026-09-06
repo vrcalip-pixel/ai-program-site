@@ -5,7 +5,9 @@
   "private": true,
   "description": "Program website for the A.S. in AI for Digital Transformation at Long Beach City College",
   "scripts": {
+    "predev": "node scripts/copy-mediapipe.mjs",
     "dev": "astro dev",
+    "prebuild": "node scripts/copy-mediapipe.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "og": "node scripts/og.mjs",
@@ -13,6 +15,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
+    "@mediapipe/tasks-vision": "^0.10.14",
     "astro": "^5.13.0"
   },
   "devDependencies": {

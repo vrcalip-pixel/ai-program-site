@@ -16,7 +16,7 @@ import { BASE } from '../lib/url';
   <div class="hud">
     <h1>Explore the program.</h1>
     <p id="hudhint">Click a point to travel to it. Scroll to move through the courses; scroll back to return.</p>
-    <div class="row"><button type="button" class="ghost" id="recenter">Recenter</button><button type="button" class="ghost sound" id="sound" aria-pressed="false" aria-label="Experience: turn on sound and immersive visuals"><span class="lbl">Experience</span></button><button type="button" class="ghost sound hf-btn" id="hfbtn" aria-pressed="false" aria-label="Turn on hands-free control (uses your camera; video stays on this device)" hidden><span class="lbl">Hands-free</span></button></div>
+    <div class="row"><button type="button" class="ghost" id="recenter">Recenter</button><button type="button" class="ghost sound" id="sound" aria-pressed="false" aria-label="Experience: turn on sound, immersive visuals and hands-free camera control (video stays on this device)"><span class="lbl">Experience</span></button></div>
   </div>
   <div class="legend" aria-hidden="true"><span><i style="background:#D4A054"></i>Courses</span><span><i style="background:#6FA8BF"></i>Credentials</span><span><i style="background:#9FB0BE"></i>People and pages</span></div>
   <aside class="panel-node" id="panel" aria-live="polite">
@@ -227,6 +227,9 @@ addEventListener('keydown',e=>{if(!document.body.classList.contains('map')||redu
   pointer(x:number,y:number){ptr.x=x;ptr.y=y},
   tilt(x:number,y:number){tilt.x=x;tilt.y=y},
   click(x:number,y:number){ptr.x=x;ptr.y=y;if(hover)openNode(hover);else{rip.push({x,y,r:0,amp:0,life:0,born:performance.now()});if(rip.length>5)rip.shift()}},
+  // hand-sized hit test: the nearest visible node within R pixels, else a wave. Returns the node id or null.
+  nodeAt(x:number,y:number,R:number){let best:any=null,bd=R;for(const n of NODES){const p=proj(n.x,n.y,n.z);if(!p)continue;const vis=Math.min(1,p.s*2.4)*(p.d<-100?Math.max(0,1+(p.d+100)/(F*0.45)):1);if(vis<.3)continue;const dd=Math.hypot(p.x-x,p.y-y);if(dd<bd){bd=dd;best=n}}return best?best.id:null},
+  clickNear(x:number,y:number,R:number){const id=(this as any).nodeAt(x,y,R);if(id)openNode(byId[id]);else{rip.push({x,y,r:0,amp:0,life:0,born:performance.now()});if(rip.length>5)rip.shift()}return id},
   step,close:closeP,
   hovering:()=>!!hover,active:()=>!!active,
 };
@@ -280,8 +283,9 @@ function startSound(){
 function stopSound(){clearInterval(timer);if(ac)ac.suspend()}
 sbtn.addEventListener('click',()=>{
   const on=sbtn.getAttribute('aria-pressed')!=='true';
-  sbtn.setAttribute('aria-pressed',String(on));sbtn.setAttribute('aria-label',on?'Experience: turn off sound and immersive visuals':'Experience: turn on sound and immersive visuals');
+  sbtn.setAttribute('aria-pressed',String(on));sbtn.setAttribute('aria-label',on?'Experience: turn off sound, immersive visuals and hands-free camera control':'Experience: turn on sound, immersive visuals and hands-free camera control (video stays on this device)');
   document.body.classList.toggle('ambient',on);if(on)nextComet=performance.now()+2500;
   on?startSound():stopSound();
+  dispatchEvent(new CustomEvent('aidt:experience',{detail:{on}}));   // HandsFree.astro starts or stops camera control
 });
 </script>

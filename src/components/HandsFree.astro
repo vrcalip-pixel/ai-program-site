@@ -1,11 +1,10 @@
 ---
 /**
- * Hands-free control for the landing map (BRIEF §10). Opt-in, separate from Experience.
+ * Hands-free control for the landing map (BRIEF §10), part of the Experience toggle.
  * Stack: MediaPipe Tasks Vision (Hand Landmarker + Face Landmarker), WASM/GPU, entirely in the browser.
  * No frames are recorded, uploaded or stored; the only network use is downloading the library and models.
- *
- * PREVIEW SWITCH: the button is shown only when the page is opened with `?handsfree` in the address.
- * To ship it for everyone, set PREVIEW_ONLY to false below.
+ * Starts when DepthMap.astro dispatches `aidt:experience` with on=true; stops when it dispatches on=false.
+ * If the camera is declined or missing, Experience keeps its sound and visuals and a one-line notice explains.
  *
  * Gestures (interpretation on top of landmarks):
  *   hand visible ........... fingertip cursor (index finger); nodes highlight under it
@@ -17,57 +16,69 @@
  * Eye tracking is deliberately left out (jittery, needs calibration).
  */
 ---
-<div class="hf-status" id="hfstatus" role="status" aria-live="polite" hidden></div>
-<video class="hf-cam" id="hfcam" playsinline muted autoplay hidden aria-label="Your camera, shown only on this device"></video>
+<video class="hf-cam" id="hfcam" playsinline muted autoplay aria-hidden="true"></video>
 <div class="hf-cursor" id="hfcursor" aria-hidden="true"></div>
 <div class="hf-notice" id="hfnotice" role="alert" hidden></div>
+<div class="hf-legend" id="hflegend" hidden>
+  <table aria-label="Hands-free gestures">
+    <caption>Camera on · video stays on this device</caption>
+    <tbody>
+      <tr data-g="cursor"><th>Raise a hand</th><td>cursor follows your index finger</td></tr>
+      <tr data-g="click"><th>Pinch on a node</th><td>travel to it</td></tr>
+      <tr data-g="press"><th>Pinch on a button</th><td>press it (See the course, Back, Deeper)</td></tr>
+      <tr data-g="deeper"><th>Push palm · nod · swipe left</th><td>deeper</td></tr>
+      <tr data-g="back"><th>Pull palm · swipe right</th><td>back</td></tr>
+      <tr data-g="tilt"><th>Turn your head</th><td>tilt the scene</td></tr>
+      <tr data-g="close"><th>Shake your head</th><td>close the panel</td></tr>
+    </tbody>
+  </table>
+</div>
 
 <script>
-  const PREVIEW_ONLY = true;
   const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
   const MODELS = {
     hand: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
     face: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
   };
 
-  const btn = document.getElementById('hfbtn') as HTMLButtonElement;
-  const status = document.getElementById('hfstatus')!;
   const cam = document.getElementById('hfcam') as HTMLVideoElement;
   const cursor = document.getElementById('hfcursor')!;
   const notice = document.getElementById('hfnotice')!;
+  const legend = document.getElementById('hflegend')!;
   const map = () => (window as any).aidtMap;
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && isSecureContext;
-  const wanted = !PREVIEW_ONLY || new URLSearchParams(location.search).has('handsfree');
-  if (btn && supported && !reduced && wanted) btn.hidden = false;
 
-  let on = false, stream: MediaStream | null = null, hands: any = null, face: any = null, raf = 0;
+  let on = false, starting = false, stream: MediaStream | null = null, hands: any = null, face: any = null, raf = 0;
   let lastVideoTime = -1, frames = 0, fpsT0 = 0, warm = 0, frameNo = 0;
   const cur = { x: innerWidth / 2, y: innerHeight / 2 };
-  let pinching = false, lastClick = 0, lastNav = 0, lastHandGesture = 0, lastHead = 0, statusTimer: any = 0;
+  let pinching = false, lastClick = 0, lastNav = 0, lastHandGesture = 0, lastHead = 0, cursorSeen = false;
   let handHist: { t: number; s: number; x: number }[] = [];
+  let curHist: { t: number; x: number; y: number }[] = [];
   let headHist: { t: number; yaw: number; pitch: number }[] = [];
   const tiltS = { x: 0, y: 0 };
+  const flashTimers: Record<string, any> = {};
 
   const d = (a: any, b: any) => Math.hypot(a.x - b.x, a.y - b.y);
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-  function setStatus(text: string, flash = false) {
-    status.textContent = text; status.hidden = false;
-    clearTimeout(statusTimer);
-    if (flash) statusTimer = setTimeout(() => { if (on) status.textContent = 'Hands-free · camera stays on your device'; }, 900);
+  function flash(g: string) {                                   // the legend row for a recognised gesture glows briefly
+    const row = legend.querySelector<HTMLElement>(`[data-g="${g}"]`); if (!row) return;
+    row.classList.add('hit'); clearTimeout(flashTimers[g]); flashTimers[g] = setTimeout(() => row.classList.remove('hit'), 700);
   }
   function showNotice(text: string) { notice.textContent = text; notice.hidden = false; setTimeout(() => { notice.hidden = true; }, 6000); }
 
-  btn?.addEventListener('click', () => (on ? stop() : start()));
+  addEventListener('aidt:experience', (e: Event) => {
+    const wantOn = !!(e as CustomEvent).detail?.on;
+    if (wantOn && supported && !reduced) start(); else stop();
+  });
 
   async function start() {
-    btn.disabled = true; setStatus('Starting camera…');
+    if (on || starting) return; starting = true;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
-      cam.srcObject = stream; cam.hidden = false; await cam.play();
-      setStatus('Loading hand and face models…');
+      cam.srcObject = stream; await cam.play();
       const mp: any = await import(/* @vite-ignore */ MP);
       const vision = await mp.FilesetResolver.forVisionTasks(`${MP}/wasm`);
       const make = async (delegate: 'GPU' | 'CPU') => {
@@ -76,36 +87,33 @@
         return [h, f];
       };
       try { [hands, face] = await make('GPU'); } catch { [hands, face] = await make('CPU'); }
-      on = true; frames = 0; warm = 0; fpsT0 = performance.now(); lastVideoTime = -1;
-      btn.setAttribute('aria-pressed', 'true'); btn.setAttribute('aria-label', 'Turn off hands-free control');
-      document.body.classList.add('handsfree');
-      setStatus('Hands-free · camera stays on your device');
+      if (!document.body.classList.contains('ambient')) { starting = false; stop(); return; }   // Experience was switched off while loading
+      on = true; frames = 0; warm = 0; fpsT0 = performance.now(); lastVideoTime = -1; cursorSeen = false;
+      document.body.classList.add('handsfree'); legend.hidden = false;
       loop();
     } catch (err: any) {
       const name = err && err.name;
       const why = name === 'NotAllowedError' ? 'Camera permission was declined.' : name === 'NotFoundError' ? 'No camera was found.' : 'The tracking models could not be loaded.';
-      stop(`Hands-free is off. ${why} Mouse, keyboard and touch still work.`);
+      stop(`Hands-free control is off. ${why} Sound and visuals stay on; mouse, keyboard and touch work as usual.`);
     }
-    btn.disabled = false;
+    starting = false;
   }
 
   function stop(msg?: string) {
     on = false; cancelAnimationFrame(raf);
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    cam.srcObject = null; cam.hidden = true;
+    cam.srcObject = null;
     try { hands && hands.close(); face && face.close(); } catch { /* ignore */ }
     hands = face = null;
-    document.body.classList.remove('handsfree');
+    document.body.classList.remove('handsfree'); legend.hidden = true;
     cursor.classList.remove('on', 'pinch');
-    btn.setAttribute('aria-pressed', 'false'); btn.setAttribute('aria-label', 'Turn on hands-free control (uses your camera; video stays on this device)');
-    status.hidden = true; clearTimeout(statusTimer);
     if (map()) map().tilt(0, 0);
     if (msg) showNotice(msg);
   }
 
-  function nav(dir: number, label: string) {
+  function nav(dir: number) {
     lastNav = lastHandGesture = performance.now(); handHist = []; headHist = [];
-    map().step(dir); setStatus(label, true);
+    map().step(dir); flash(dir > 0 ? 'deeper' : 'back');
   }
 
   function loop() {
@@ -115,10 +123,10 @@
     if (cam.currentTime === lastVideoTime) return;
     lastVideoTime = cam.currentTime; frames++; frameNo++;
 
-    // graceful degradation: if this device can't keep up, turn the mode off with a one-line notice
+    // graceful degradation: if this device can't keep up, turn camera control off with a one-line notice
     if (now - fpsT0 > 3000) {
       const fps = frames * 1000 / (now - fpsT0); frames = 0; fpsT0 = now;
-      if (warm >= 1 && fps < 15) { stop("Hands-free turned off: this device can't track fast enough (under 15 frames a second)."); return; }
+      if (warm >= 1 && fps < 15) { stop("Hands-free control turned off: this device can't track fast enough (under 15 frames a second). Sound and visuals stay on."); return; }
       warm++;
     }
 
@@ -129,7 +137,9 @@
       const W = innerWidth, H = innerHeight;
       const tip = lm[8];
       const tx = (1 - tip.x) * W, ty = tip.y * H;            // mirrored: the cursor moves the way the hand moves
-      cur.x += (tx - cur.x) * 0.35; cur.y += (ty - cur.y) * 0.35;
+      if (!pinching) { cur.x += (tx - cur.x) * 0.35; cur.y += (ty - cur.y) * 0.35; }   // frozen while pinching: the finger moves toward the thumb, the cursor must not
+      curHist.push({ t: now, x: cur.x, y: cur.y }); curHist = curHist.filter(h => now - h.t < 300);
+      if (!cursorSeen) { cursorSeen = true; flash('cursor'); }
       cursor.classList.add('on');
       cursor.style.transform = `translate(${cur.x.toFixed(1)}px,${cur.y.toFixed(1)}px)${pinching ? ' scale(.6)' : ''}`;
       map().pointer(cur.x, cur.y);
@@ -137,7 +147,13 @@
       const palm = d(lm[0], lm[9]) || 0.001;
       const pinch = d(lm[4], lm[8]) / palm;
       if (pinch < 0.4 && !pinching && now - lastClick > 500) {
-        pinching = true; lastClick = lastHandGesture = now; cursor.classList.add('pinch'); map().click(cur.x, cur.y); handHist = [];
+        pinching = true; lastClick = lastHandGesture = now; cursor.classList.add('pinch'); handHist = [];
+        // click where the cursor was just before the pinch started (the fingertip drifts as it closes)
+        const at = curHist[0] || cur; cur.x = at.x; cur.y = at.y;
+        const el = document.elementFromPoint(at.x, at.y);
+        const ctrl = el && (el.closest('#panel a, #panel button, .hud button, .nav a, .nav button') as HTMLElement | null);
+        if (ctrl) { ctrl.click(); flash('press'); }              // pinch on a button or link presses it (See the course, Back, Deeper, Close)
+        else { map().clickNear(at.x, at.y, 64); flash('click'); }
       } else if (pinch > 0.55 && pinching) { pinching = false; cursor.classList.remove('pinch'); }
 
       const tips = [8, 12, 16, 20], pips = [6, 10, 14, 18];
@@ -149,16 +165,16 @@
       handHist = handHist.filter(h => now - h.t < 700);
       if (handHist.length > 4 && now - lastNav > 1200 && !pinching) {
         const first = handHist[0];
-        if (open && palm > first.s * 1.35) nav(1, 'Deeper');
-        else if (open && palm < first.s * 0.72) nav(-1, 'Back');
+        if (open && palm > first.s * 1.35) nav(1);
+        else if (open && palm < first.s * 0.72) nav(-1);
         else if (two) {
           const dx = tip.x - first.x;                        // raw x grows toward the viewer's left (mirrored)
-          if (dx > 0.22) nav(1, 'Deeper');                   // swipe left on screen
-          else if (dx < -0.22) nav(-1, 'Back');              // swipe right on screen
+          if (dx > 0.22) nav(1);                             // swipe left on screen
+          else if (dx < -0.22) nav(-1);                      // swipe right on screen
         }
       }
     } else {
-      cursor.classList.remove('on'); pinching = false; cursor.classList.remove('pinch'); handHist = [];
+      cursor.classList.remove('on'); pinching = false; cursor.classList.remove('pinch'); handHist = []; curHist = []; cursorSeen = false;
     }
 
     // ---- head (every other frame) ----
@@ -173,6 +189,7 @@
         const pitch = clamp(((nose.y - cy) / (h / 2)) * 2.5, -1, 1);
         tiltS.x += (-yaw - tiltS.x) * 0.2; tiltS.y += (pitch - tiltS.y) * 0.2;
         map().tilt(tiltS.x, tiltS.y);
+        if (Math.abs(yaw) > 0.5) flash('tilt');
 
         headHist.push({ t: now, yaw, pitch });
         headHist = headHist.filter(x => now - x.t < 900);
@@ -180,8 +197,8 @@
           let pMax = -9, pMin = 9, yMax = -9, yMin = 9, tPMax = 0, tPMin = 0;
           for (const x of headHist) { if (x.pitch > pMax) { pMax = x.pitch; tPMax = x.t; } if (x.pitch < pMin) { pMin = x.pitch; tPMin = x.t; } yMax = Math.max(yMax, x.yaw); yMin = Math.min(yMin, x.yaw); }
           const back = headHist[headHist.length - 1];
-          if (pMax - pMin > 0.35 && tPMax > tPMin && back.pitch < pMax - 0.2) { lastHead = now; headHist = []; nav(1, 'Deeper'); }
-          else if (yMax - yMin > 0.6 && Math.abs(back.yaw) < 0.25 && map().active()) { lastHead = now; headHist = []; map().close(); setStatus('Closed', true); }
+          if (pMax - pMin > 0.35 && tPMax > tPMin && back.pitch < pMax - 0.2) { lastHead = now; headHist = []; nav(1); }
+          else if (yMax - yMin > 0.6 && Math.abs(back.yaw) < 0.25 && map().active()) { lastHead = now; headHist = []; map().close(); flash('close'); }
         }
       }
     }

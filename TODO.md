@@ -48,6 +48,6 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 ## Later passes (not started)
 
-- Pass two: hands-free mode (BRIEF §10) — built 2026-09-05 in `src/components/HandsFree.astro`, live behind a preview switch: open the map with `?handsfree` in the address. To ship it for everyone, set `PREVIEW_ONLY` to `false` in that file. (Shipped on `main` behind the switch instead of a branch, because the camera only works over HTTPS on a real device.)
+- Pass two: hands-free mode (BRIEF §10) — shipped 2026-09-05 in `src/components/HandsFree.astro` as part of the Experience button (sound, visuals and camera control together, per Vincent). Gesture thresholds are first guesses; tune from real use.
 - Labor-market framing on the employers page, only with citations (LA/OC COE, BLS OEWS, CA EDD, Lightcast; APA 7).
 - "Request info" form, if a mailto stops being enough.

@@ -217,7 +217,7 @@ Rationale worth stating on the About page when shipped: a Multi-Modal AI program
 
 - **Astro** (static) + **Tailwind** for pages and layout; the landing canvas is vanilla JS ported from the prototype into a single component (do not rewrite it in a framework). Fonts via Google Fonts with `display=swap`.
 - **Repo:** new, empty GitHub repo (name TBD). Deploy to **GitHub Pages** via GitHub Actions on push to `main`.
-- **Domain:** to be registered later (program-branded, `.org` or `.college` preferred). Add `CNAME` + DNS when Vincent has it; enforce HTTPS.
+- **Domain:** aifordigitaltransformation.org, registered at Namecheap on September 5, 2026. DNS: four GitHub Pages `A` records on the apex and a `www` CNAME to `vrcalip-pixel.github.io`; custom domain set in the repo's Pages settings; `public/CNAME` in the repo; HTTPS enforced.
 - Content in Markdown/JSON so Vincent can edit course pages without touching components.
 - Commit early and often with plain-English messages; open a PR for pass 2 (hands-free) rather than merging straight to `main`.
 

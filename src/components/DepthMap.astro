@@ -71,7 +71,8 @@ function sres(){SW=innerWidth;SH=innerHeight;DPR=Math.min(1.5,devicePixelRatio||
   if(!stars.length)for(let i=0;i<(innerWidth<820?160:420);i++)stars.push({x:(Math.random()-.5)*4200,y:(Math.random()-.5)*2600,z:-1600+Math.random()*7000,r:.5+Math.random()*1.5,ph:Math.random()*6.283,sp:.35+Math.random()*.7});
   if(!net.length)for(let i=0;i<(innerWidth<820?70:170);i++){net.push({x:(Math.random()-.5)*3800,y:(Math.random()-.5)*2400,z:-1400+Math.random()*6800,ph:Math.random()*6.283})}
   fit()}
-function fit(){const mob=innerWidth<820;tgt.z=mob?REST.z-600:REST.z;tgt.x=0;tgt.y=mob?40:0}
+// rest camera. Phones pull back and aim left so AI 40, the starting point, sits in frame (it is off the left edge when centred)
+function fit(){const mob=innerWidth<820;tgt.z=mob?REST.z-600:REST.z;tgt.x=mob?-260:0;tgt.y=mob?-60:0}
 addEventListener('resize',sres);sres();
 
 // liquid wave in screen space; nearer layers move more
@@ -169,7 +170,7 @@ function draw(now:number){
         if(isA){sx.globalAlpha=.85;sx.fillStyle='#EEF2F5';sx.font=`500 ${Math.max(10,Math.min(16,11*p.s*1.7)).toFixed(1)}px "IBM Plex Sans"`;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=6;sx.fillText(st.n,qx+7,qy+4);sx.shadowBlur=0}})}
     // labels appear as things approach
     // labels scale with distance: large up front, small in the background, growing as the camera approaches
-    const show=(p.s>.26||isH||isA)&&vis>.25;
+    const show=(p.s>.26||isH||isA)&&vis>.25&&p.x>0&&p.x<SW;                           // no label for a node whose dot is off the canvas (it would read as a clipped fragment)
     if(show){const la=Math.min(1,(p.s-.2)*3.5)*vis;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=8;sx.shadowOffsetY=1;const fs=Math.max(9,Math.min(30,34*Math.pow(p.s,1.15))),fs2=Math.max(9,fs*.85);
       sx.globalAlpha=(isH||isA?1:.9)*la;sx.font=`600 ${fs.toFixed(1)}px "IBM Plex Sans"`;sx.fillStyle='#EEF2F5';sx.fillText(n.n.split(' · ')[0],p.x+r+10,p.y-2);
       sx.globalAlpha=.8*la;sx.font=`500 ${fs2.toFixed(1)}px "IBM Plex Serif"`;sx.fillStyle='#B8C6D1';sx.fillText(n.short||n.t,p.x+r+10,p.y+fs2*1.15);sx.shadowBlur=0;sx.shadowOffsetY=0}
@@ -182,6 +183,7 @@ if(reduced){
   // static fallback: no canvas, no dolly, no wave, no comets. The destination list is visible via CSS.
   document.getElementById('hudhint')!.textContent='Motion is reduced on this device, so the map is shown as a list. Choose a destination below.';
 }else{
+  if(matchMedia('(pointer:coarse)').matches)document.getElementById('hudhint')!.textContent='Tap a point to travel to it. Swipe up to move through the courses; swipe down to return.';
   requestAnimationFrame(draw);
 }
 

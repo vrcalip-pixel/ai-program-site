@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
+import { breadcrumbs } from '../lib/schema';
 
 // One form for every stakeholder. The "I am a" choice swaps in the fields that role needs.
 // Submissions post to the Apps Script in scripts/apps-script/Code.gs (see FORM-SETUP.md), which
@@ -10,7 +11,7 @@ import { url } from '../lib/url';
 // Preselect with ?role=student|counselor|employer|other and, for employers, &topic=advisory|project|internship|hiring|other
 const { endpoint, token } = program.form;
 ---
-<Base title="Request info" description={`Ask a question or get in touch about ${program.name} at ${program.college}: for students, counselors, employers and partners.`} current="request">
+<Base title="Request info" description={`Ask a question or get in touch about ${program.name} at ${program.college}: for students, counselors, employers and partners.`} current="request" jsonLd={breadcrumbs([{ name: 'Request info', path: '/request-info' }])}>
   <main id="main" class="page">
     <section class="block" style="padding-top:0">
       <div class="wrap">

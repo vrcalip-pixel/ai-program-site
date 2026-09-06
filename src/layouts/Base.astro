@@ -12,8 +12,11 @@ interface Props {
   /** 'map' = the landing page (fixed canvas, no footer). */
   mode?: 'map' | 'page';
   current?: string;
+  /** JSON-LD objects (see src/lib/schema.ts); rendered as one script tag per object. */
+  jsonLd?: object | object[];
 }
-const { title, description, mode = 'page', current } = Astro.props;
+const { title, description, mode = 'page', current, jsonLd } = Astro.props;
+const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 const fullTitle = title === program.name ? `${program.name} · ${program.college}` : `${title} · ${program.name}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const og = new URL(url('/og.png'), Astro.site);
@@ -40,6 +43,7 @@ const og = new URL(url('/og.png'), Astro.site);
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  {ld.map(o => <script type="application/ld+json" set:html={JSON.stringify(o)} />)}
 </head>
 <body class={mode}>
   <a class="skip" href="#main">Skip to content</a>

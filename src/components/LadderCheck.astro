@@ -1,0 +1,79 @@
+---
+/**
+ * "Where are you on the ladder?" — a planning aid on the Pathway page.
+ * Tick the AI courses you have taken (or plan to) and see which courses each credential still needs.
+ * Everything is derived from src/data/program.json (certificate compositions confirmed by Vincent, 2026-09-05)
+ * and the course files, so it can never disagree with the rest of the site. It never claims a credential has
+ * been earned: it counts courses and repeats the credential's current status. A counselor confirms the rest.
+ * Ticks are kept in localStorage on the visitor's device; ?taken=ai-40,ai-45 in the URL preselects them.
+ */
+import { getCollection } from 'astro:content';
+import program from '../data/program.json';
+
+const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
+const rungs = program.ladder.map(r => ({ id: r.id, name: r.name, kind: r.kind, units: r.units, status: r.status, courses: r.courses }));
+---
+<section class="ladcheck" id="ladder-check" aria-labelledby="lc-title" data-catalog={program.catalogUrl}>
+  <h2 id="lc-title">Where are you on the ladder?</h2>
+  <p>Tick the courses you've completed, or plan to, and see what each credential still needs. A planning aid, not an official evaluation: a counselor confirms what you've earned.</p>
+  <ul class="courses" id="lc-courses">
+    {courses.map(c => (
+      <li><label><input type="checkbox" name="taken" value={c.id} data-number={c.data.number} /><span><b>{c.data.number}</b>{c.data.title}</span></label></li>
+    ))}
+  </ul>
+  <ul class="rungs" id="lc-rungs" aria-live="polite">
+    {rungs.map(r => (
+      <li data-rung={r.id} data-courses={r.courses.join('|')} data-status={r.status}>
+        <h3>{r.id === 'degree' ? program.degree : r.name}<small>{r.kind} · {r.units} units</small></h3>
+        <span class="count">0 of {r.courses.length} courses</span>
+        <span class="need">Courses: {r.courses.join(', ')}{r.id === 'degree' ? ', plus supporting courses and general education' : ''}.</span>
+      </li>
+    ))}
+  </ul>
+  <div class="foot">
+    <span>Saved on this device only. Nothing is sent anywhere.</span>
+    <button type="button" id="lc-clear">Clear ticks</button>
+  </div>
+</section>
+
+<script>
+  const root = document.getElementById('ladder-check')!;
+  const boxes = [...root.querySelectorAll<HTMLInputElement>('input[name="taken"]')];
+  const rows = [...root.querySelectorAll<HTMLElement>('#lc-rungs li')];
+  const KEY = 'ladder.taken';
+
+  function update(save = true) {
+    const taken = new Set(boxes.filter(b => b.checked).map(b => b.dataset.number!));
+    for (const row of rows) {
+      const need = row.dataset.courses!.split('|');
+      const have = need.filter(n => taken.has(n));
+      const left = need.filter(n => !taken.has(n));
+      const degree = row.dataset.rung === 'degree';
+      row.classList.toggle('done', left.length === 0);
+      row.classList.toggle('part', have.length > 0 && left.length > 0);
+      row.querySelector('.count')!.textContent = `${have.length} of ${need.length} courses`;
+      const needEl = row.querySelector('.need')!;
+      if (left.length === 0) {
+        needEl.innerHTML = degree
+          ? `<b>All six AI courses ticked.</b> The degree also needs supporting courses and general education; a counselor confirms those against the <a href="${root.dataset.catalog}">LBCC catalog</a>.`
+          : `<b>All courses ticked.</b> Credential status: ${row.dataset.status}. A counselor confirms what you've earned.`;
+      } else if (have.length === 0) {
+        needEl.textContent = `Courses: ${need.join(', ')}${degree ? ', plus supporting courses and general education' : ''}.`;
+      } else {
+        needEl.innerHTML = `Still needed: <b>${left.join(', ')}</b>${degree ? ', plus supporting courses and general education' : ''}.`;
+      }
+    }
+    if (save) { try { localStorage.setItem(KEY, [...taken].join(',')); } catch { /* ignore */ } }
+  }
+
+  // preselect: ?taken=ai-40,ai-45 wins, otherwise what this device remembers
+  const fromUrl = new URLSearchParams(location.search).get('taken');
+  let initial: string[] = [];
+  if (fromUrl) initial = fromUrl.split(',');
+  else { try { const s = localStorage.getItem(KEY); if (s) initial = s.split(','); } catch { /* ignore */ } }
+  boxes.forEach(b => { b.checked = initial.includes(b.value) || initial.includes(b.dataset.number!); });
+  update(!!fromUrl);
+
+  boxes.forEach(b => b.addEventListener('change', () => update()));
+  document.getElementById('lc-clear')!.addEventListener('click', () => { boxes.forEach(b => { b.checked = false; }); update(); });
+</script>

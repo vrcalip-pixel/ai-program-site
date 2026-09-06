@@ -18,6 +18,11 @@ You do not need to touch components to change what the site says.
 | The landing map's node text | `src/components/DepthMap.astro` (the `NODES` list) |
 | The request-info form backend (sheet + email) | `scripts/apps-script/Code.gs`, setup in `FORM-SETUP.md`, endpoint in `src/data/program.json` |
 | Hero videos | drop `ai-nn.mp4`, `ai-nn.webm`, `ai-nn.jpg` into `public/video/`, then set `video: true` in that course's frontmatter |
+| "Ask the program" answers | `src/data/faq.json` |
+| "Where are you on the ladder?" (pathway checklist) | nothing to edit: it reads `program.json` and the course files |
+| Labor-market dashboard on the employers page (figures, sources, APA 7 references) | `src/data/labor.json`; the component `src/components/LaborDashboard.astro` renders it and builds the reference list from the same file |
+| Structured data (JSON-LD for search engines) | `src/lib/schema.ts`; values come from `program.json` and the course files |
+| Hands-free gesture thresholds | `TUNE` at the top of the script in `src/components/HandsFree.astro` (see below) |
 
 Course frontmatter is validated by `src/content.config.ts`; a typo in a field name fails the build with a clear message.
 
@@ -28,9 +33,23 @@ npm install
 npm run dev
 ```
 
-Then open the URL it prints (the site is served under `/ai-program-site/` to match GitHub Pages).
+Then open the URL it prints.
 
-`npm run build` produces `dist/`. `npm run og` regenerates `public/og.png`.
+`npm run build` produces `dist/`. `npm run og` regenerates `public/og.png`. Before `dev` and `build`, `scripts/copy-mediapipe.mjs` copies the MediaPipe WASM runtime from `node_modules` into `public/mediapipe/` (gitignored), so the site serves it itself.
+
+## Hands-free control
+
+The Experience button on the map turns on sound, richer visuals and camera control (BRIEF §10). Hand and face tracking run in the browser with MediaPipe Tasks Vision; the library is bundled from npm, the WASM is served from this site, and the two model files are fetched from Google's model bucket the first time Experience is switched on. No video leaves the device.
+
+Tuning from real use:
+
+- Open the map with `?hf=debug` to see a small overlay with the frame rate, the pinch ratio, palm size, finger states, head yaw and pitch, and the last recognised gesture. `?hf=nodebug` hides it again (the choice is remembered on that device).
+- Every threshold is in the `TUNE` object at the top of the script in `src/components/HandsFree.astro`, each with a comment. To try values without a rebuild, set `localStorage.hf.tune` in the browser console to a JSON object with the keys to override, for example `localStorage.setItem('hf.tune', '{"pinchOn":0.35}')`, then turn Experience off and on. Once a value feels right, change it in `TUNE`.
+- If the device tracks under 15 frames a second, camera control turns itself off with a one-line notice; sound and visuals stay on.
+
+## Printing
+
+Content pages (pathway, counselors, employers, about, courses) have a print stylesheet: dark ink on white, no navigation chrome, external links print their address. Counselors can print the counselor page as a one-sheet.
 
 ## Deployment and domain
 

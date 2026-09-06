@@ -3,12 +3,16 @@ import Base from '../layouts/Base.astro';
 import DepthMap from '../components/DepthMap.astro';
 import HandsFree from '../components/HandsFree.astro';
 import program from '../data/program.json';
+import { getCollection } from 'astro:content';
+import { website, programSchema } from '../lib/schema';
+const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
 ---
 <Base
   title={program.name}
   description={`The ${program.degree} at ${program.college}: six no-code, ethics-first AI courses that stack into certificates and a degree. Explore the program.`}
   mode="map"
   current="home"
+  jsonLd={[website(), programSchema(courses)]}
 >
   <main id="main">
     <DepthMap />

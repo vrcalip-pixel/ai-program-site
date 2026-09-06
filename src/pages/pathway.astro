@@ -3,6 +3,8 @@ import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
+import LadderCheck from '../components/LadderCheck.astro';
+import { programSchema, breadcrumbs } from '../lib/schema';
 
 const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
 const byNumber = Object.fromEntries(courses.map(c => [c.data.number, c]));
@@ -21,7 +23,7 @@ function courseLink(num: string) {
   return c ? url(`/courses/${c.id}`) : null;
 }
 ---
-<Base title="Pathway" description={`The credential ladder for ${program.name} at ${program.college}: a 6-unit certificate, a 12-unit certificate, an 18-unit certificate, and the 60-unit A.S. degree. No prerequisites, no code.`} current="pathway">
+<Base title="Pathway" description={`The credential ladder for ${program.name} at ${program.college}: a 6-unit certificate, a 12-unit certificate, an 18-unit certificate, and the 60-unit A.S. degree. No prerequisites, no code.`} current="pathway" jsonLd={[programSchema(courses), breadcrumbs([{ name: 'Pathway', path: '/pathway' }])]}>
   <main id="main" class="page">
     <section class="block" style="padding-top:0">
       <div class="wrap">
@@ -42,6 +44,7 @@ function courseLink(num: string) {
             </li>
           ))}
         </ol>
+        <LadderCheck />
       </div>
     </section>
 

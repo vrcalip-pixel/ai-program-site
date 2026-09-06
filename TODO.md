@@ -46,7 +46,7 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 13. **Domain** — when registered: set `site` to the domain and `base` to `'/'` in `astro.config.mjs`, add `public/CNAME` with the domain, configure DNS, and turn on "Enforce HTTPS" in the repo's Pages settings.
 
-14. **GitHub Pages source** — the workflow enables Pages automatically on first run. If the first deploy fails, open the repo's Settings → Pages and set Source to "GitHub Actions", then re-run the workflow.
+14. **GitHub Pages source** — done. Source is set to "GitHub Actions" in the repo settings; every push to `main` redeploys. Live at https://vrcalip-pixel.github.io/ai-program-site/
 
 ## Later passes (not started)
 

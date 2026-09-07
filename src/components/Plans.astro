@@ -1,0 +1,146 @@
+---
+/**
+ * "Courses and recommended sequence" on the counselor page: one heading, several fold-out panels.
+ *   1. The six AI courses (the original static table; open by default)
+ *   2. Certificate plans: which courses, how many terms, for each of the three certificates
+ *   3. Degree plan: a sample four-semester plan to 60 units (AI courses + supporting courses + LBCC-GE + electives)
+ *   4. General education and electives: the GE areas with example courses, and the elective rule
+ * Plan data lives in src/data/plans.json; program facts in src/data/program.json; courses in the content collection.
+ * A panel opens on its own when the page is loaded with its hash (#plan-degree etc.), and every panel opens for print.
+ */
+import type { CollectionEntry } from 'astro:content';
+import program from '../data/program.json';
+import plans from '../data/plans.json';
+import { url } from '../lib/url';
+
+interface Props { courses: CollectionEntry<'courses'>[] }
+const { courses } = Astro.props;
+const byId = Object.fromEntries(courses.map(c => [c.id, c]));
+const supportBy = Object.fromEntries(plans.supporting.map(s => [s.number, s]));
+const areaBy = Object.fromEntries(plans.ge.areas.map(a => [a.id, a]));
+const ladderBy = Object.fromEntries(program.ladder.map(r => [r.id, r]));
+
+const aiUnits = courses.reduce((n, c) => n + c.data.units, 0);
+const supportUnits = plans.supporting.reduce((n, s) => n + s.units, 0);
+const geUnits = plans.ge.unitsMin;
+const electiveUnits = 60 - aiUnits - supportUnits - geUnits;
+const needsConfirm = plans.supporting.some(s => s.confirm) || plans.ge.confirm || plans.electives.confirm;
+
+type Item = { kind: string; id?: string; number?: string; area?: string; units?: number; label?: string };
+function row(it: Item): { code: string; title: string; units: number; href?: string; cls: string } {
+  if (it.kind === 'ai') { const c = byId[it.id!]; return { code: c.data.number, title: c.data.title + (c.data.capstone ? ' (capstone)' : ''), units: c.data.units, href: url(`/courses/${c.id}`), cls: 'ai' }; }
+  if (it.kind === 'support') { const s = supportBy[it.number!]; return { code: s.number, title: s.title, units: s.units, cls: 'support' }; }
+  if (it.kind === 'ge') { const a = areaBy[it.area!]; return { code: `GE area ${a.id}`, title: `${a.name}, e.g. ${a.example}`, units: a.units, cls: 'ge' }; }
+  return { code: 'Elective', title: it.label || 'Elective', units: it.units || 0, cls: 'elective' };
+}
+const semesters = plans.degreePlan.semesters.map(s => { const rows = s.items.map(row); return { ...s, rows, units: rows.reduce((n, r) => n + r.units, 0) }; });
+const planTotal = semesters.reduce((n, s) => n + s.units, 0);
+---
+<div class="folds" id="plans">
+  <details class="fold" id="plan-courses" open>
+    <summary><span>The six AI courses</span><small>{aiUnits} units · recommended order {program.sequenceNote}</small></summary>
+    <div class="fold-body">
+      <p class="fold-note">AI 60 and AI 65 may be taken in either order. None of the courses has a prerequisite; recommended preparation is advisory.</p>
+      <div class="tablewrap" tabindex="0" role="region" aria-label="The six AI courses">
+        <table class="data">
+          <thead><tr><th>Course</th><th>Title</th><th>Units</th><th>Formerly</th><th>Recommended preparation</th><th>Counts toward</th></tr></thead>
+          <tbody>
+            {courses.map(c => (
+              <tr>
+                <td><b><a href={url(`/courses/${c.id}`)}>{c.data.number}</a></b></td>
+                <td>{c.data.title}{c.data.capstone ? ' (capstone)' : ''}</td>
+                <td>{c.data.units}</td>
+                <td>{c.data.formerly}</td>
+                <td>{c.data.recommendedPreparationConfirmed ? c.data.recommendedPreparation : 'To be confirmed'}</td>
+                <td><a href={url(`/pathway#${c.data.countsToward.id}`)}>{c.data.countsToward.name.replace(/^the /, '')}</a>; degree</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <details class="fold" id="plan-certificates">
+    <summary><span>Pursuing a certificate</span><small>three stackable certificates, one to four semesters</small></summary>
+    <div class="fold-body">
+      <p class="fold-note">Each certificate is the previous one plus two courses, so a student can stop at any rung with something transcripted, or keep going. Two AI courses a term is a comfortable pace beside work.</p>
+      <div class="plan-grid">
+        {plans.certificatePlans.map(cp => { const r = ladderBy[cp.id]; return (
+          <article class="plan-card">
+            <header>
+              <h3><a href={url(`/pathway#${r.id}`)}>{r.name}</a></h3>
+              <span class="kind">{r.kind} · {r.units} units · {r.status}{r.aidEligible ? ' · Title IV eligible' : ''}</span>
+            </header>
+            <ol class="terms">
+              {cp.terms.map(t => (
+                <li><b>{t.name}</b><span>{t.ids.map((id, i) => <>{i > 0 && ' + '}<a href={url(`/courses/${id}`)}>{byId[id].data.number}</a></>)}</span></li>
+              ))}
+            </ol>
+            <p>{cp.note}</p>
+          </article>
+        ); })}
+      </div>
+    </div>
+  </details>
+
+  <details class="fold" id="plan-degree">
+    <summary><span>Pursuing the degree</span><small>sample plan to 60 units, {plans.degreePlan.title.toLowerCase()}</small></summary>
+    <div class="fold-body">
+      <p class="fold-note">{plans.degreePlan.note}</p>
+      <ul class="plan-key" aria-label="Key">
+        <li><i class="ai"></i>AI course ({aiUnits} units)</li>
+        <li><i class="support"></i>Supporting course ({supportUnits} units)</li>
+        <li><i class="ge"></i>General education, {plans.ge.plan} ({geUnits} units)</li>
+        <li><i class="elective"></i>Electives to reach 60 ({electiveUnits} units)</li>
+      </ul>
+      <div class="plan-grid sem">
+        {semesters.map(s => (
+          <article class="plan-card">
+            <header><h3>{s.name}</h3><span class="kind">{s.units} units</span></header>
+            <ul class="plan-rows">
+              {s.rows.map(r => (
+                <li class={r.cls}><i></i><b>{r.href ? <a href={r.href}>{r.code}</a> : r.code}</b><span>{r.title}</span><em>{r.units}</em></li>
+              ))}
+            </ul>
+            {s.milestone && <p class="milestone">{s.milestone}</p>}
+          </article>
+        ))}
+      </div>
+      <p class="fold-note" style="margin-top:14px">Total {planTotal} units. A plan is a starting point: which general-education courses satisfy each area, and what transfers in, is settled with an LBCC counselor. <a href={program.catalogUrl}>Full requirements in the LBCC catalog</a>.</p>
+    </div>
+  </details>
+
+  <details class="fold" id="plan-ge">
+    <summary><span>General education and electives</span><small>{plans.ge.plan} areas with example courses; the elective rule</small></summary>
+    <div class="fold-body">
+      <p class="fold-note">{plans.ge.unitsNote}</p>
+      <div class="tablewrap" tabindex="0" role="region" aria-label="General education areas, supporting courses and electives">
+        <table class="data">
+          <thead><tr><th>Area</th><th>Requirement</th><th>Units</th><th>Example course</th></tr></thead>
+          <tbody>
+            {plans.ge.areas.map(a => (
+              <tr><td><b>{a.id}</b></td><td>{a.name}</td><td>{a.units}</td><td>{a.example}{a.note ? <><br /><small style="color:var(--ink-2)">{a.note}</small></> : null}</td></tr>
+            ))}
+            {plans.supporting.map(s => (
+              <tr><td><b>{s.number}</b></td><td>Supporting course: {s.title}</td><td>{s.units}</td><td>Required for the degree{s.note ? <><br /><small style="color:var(--ink-2)">{s.note}</small></> : null}</td></tr>
+            ))}
+            <tr><td><b>Electives</b></td><td>Degree-applicable courses to reach 60 units</td><td>{electiveUnits}</td><td>{plans.electives.note}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fold-note" style="margin-top:14px">Graduation also requires the LBCC proficiencies (reading, writing, mathematics, information competency), a 2.0 grade-point average and 12 units in residence. Sources: {plans.sources.map((s, i) => <>{i > 0 && '; '}<a href={s.url}>{s.text.split(':')[0]}</a></>)}.</p>
+    </div>
+  </details>
+  {needsConfirm && <p class="fold-note" style="margin-top:12px;font-size:13px">Draft for review: unit totals for the supporting courses and general education are being confirmed against the approved program requirements.</p>}
+</div>
+
+<script>
+  // open the panel named in the URL hash; open all panels for print and restore afterwards
+  const folds = Array.from(document.querySelectorAll<HTMLDetailsElement>('#plans details'));
+  function openHash() { const el = location.hash && document.querySelector<HTMLDetailsElement>(`#plans details${location.hash}`); if (el) el.open = true; }
+  openHash(); addEventListener('hashchange', openHash);
+  let wasOpen: boolean[] = [];
+  addEventListener('beforeprint', () => { wasOpen = folds.map(f => f.open); folds.forEach(f => { f.open = true; }); });
+  addEventListener('afterprint', () => { folds.forEach((f, i) => { f.open = wasOpen[i]; }); });
+</script>

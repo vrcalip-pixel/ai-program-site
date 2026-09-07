@@ -94,9 +94,9 @@ function courseLink(num: string) {
             <dt>Supporting courses</dt>
             <dd>
               {/* TODO(vincent): only the three supporting courses with CORs on file are listed. Supply the full approved requirements. */}
-              {program.supportingCourses.map((s, i) => <>{i > 0 && ', '}{s.number} ({s.title})</>)}. Supporting courses shown are those with outlines on file.
+              {program.supportingCourses.map((s, i) => <>{i > 0 && ', '}{s.number} ({s.title})</>)} (10 units; 28 with the AI courses)
             </dd>
-            <dt>General education</dt><dd>{program.generalEducationUnits} units</dd>
+            <dt>General education</dt><dd>LBCC-GE, CSU GE Breadth or Cal-GETC, then electives to 60 units. <a href={url('/counselors#plan-degree')}>Sample semester plan</a></dd>
             <dt>Transcripted</dt><dd>Yes</dd>
             <dt>Financial aid</dt><dd>Eligible (Title IV)</dd>
             <dt>Full requirements</dt><dd><a href={program.catalogUrl}>See the LBCC catalog</a></dd>

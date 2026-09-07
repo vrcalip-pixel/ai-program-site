@@ -4,6 +4,8 @@ import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
 import { breadcrumbs } from '../lib/schema';
+import Plans from '../components/Plans.astro';
+import plans from '../data/plans.json';
 
 const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
 ---
@@ -48,7 +50,7 @@ const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b
     <section class="block">
       <div class="wrap">
         <h2>Credentials and unit totals</h2>
-        <div class="tablewrap">
+        <div class="tablewrap" tabindex="0" role="region" aria-label="Credentials and unit totals">
           <table class="data">
             <thead><tr><th>Credential</th><th>Type</th><th>Units</th><th>Courses</th><th>Status</th><th>Financial aid</th></tr></thead>
             <tbody>
@@ -72,24 +74,8 @@ const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b
     <section class="block">
       <div class="wrap">
         <h2>Courses and recommended sequence</h2>
-        <p style="color:var(--ink-2);max-width:62ch;margin-bottom:20px">Recommended order: {program.sequenceNote}. AI 60 and AI 65 may be taken in either order. None of the courses has a prerequisite; recommended preparation is advisory.</p>
-        <div class="tablewrap">
-          <table class="data">
-            <thead><tr><th>Course</th><th>Title</th><th>Units</th><th>Formerly</th><th>Recommended preparation</th><th>Counts toward</th></tr></thead>
-            <tbody>
-              {courses.map(c => (
-                <tr>
-                  <td><b><a href={url(`/courses/${c.id}`)}>{c.data.number}</a></b></td>
-                  <td>{c.data.title}{c.data.capstone ? ' (capstone)' : ''}</td>
-                  <td>{c.data.units}</td>
-                  <td>{c.data.formerly}</td>
-                  <td>{c.data.recommendedPreparationConfirmed ? c.data.recommendedPreparation : 'To be confirmed'}</td>
-                  <td><a href={url(`/pathway#${c.data.countsToward.id}`)}>{c.data.countsToward.name.replace(/^the /, '')}</a>; degree</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <p style="color:var(--ink-2);max-width:62ch;margin-bottom:20px">The six AI courses first, then a sample plan for a student pursuing a certificate or the degree. Open the panel that fits the student in front of you.</p>
+        <Plans courses={courses} />
       </div>
     </section>
 
@@ -97,8 +83,8 @@ const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b
       <div class="wrap two">
         <div class="prose">
           <h2>Degree requirements</h2>
-          <p>The A.S. is 60 units: the six AI courses (18 units), supporting courses, and general education ({program.generalEducationUnits} units). Supporting courses with outlines on file: {program.supportingCourses.map(s => `${s.number} (${s.title})`).join(', ')}.</p>
-          {/* TODO(vincent): supply the full approved degree requirements. */}
+          <p>The A.S. is 60 units: the six AI courses (18 units) and three supporting courses, {plans.supporting.map(s => `${s.number} (${s.title}, ${s.units} units)`).join(', ')}, for a 28-unit core; then general education ({plans.ge.plan}, CSU GE Breadth or Cal-GETC) and electives to reach 60 degree-applicable units. A <a href="#plan-degree">sample four-semester plan</a> is above.</p>
+          {/* TODO(vincent): confirm the supporting-course units and the GE total against the approved requirements (see src/data/plans.json). */}
           <p>Full requirements: <a href={program.catalogUrl}>see the LBCC catalog</a>.</p>
         </div>
         <div class="prose">

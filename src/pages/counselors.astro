@@ -83,7 +83,7 @@ const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b
       <div class="wrap two">
         <div class="prose">
           <h2>Degree requirements</h2>
-          <p>The A.S. is 60 units: the six AI courses (18 units) and three supporting courses, {plans.supporting.map(s => `${s.number} (${s.title}, ${s.units} units)`).join(', ')}, for a 28-unit core; then general education ({plans.ge.plan}, CSU GE Breadth or Cal-GETC) and electives to reach 60 degree-applicable units. A <a href="#plan-degree">sample four-semester plan</a> is above.</p>
+          <p>The A.S. is 60 units: the six AI courses (18 units) and three supporting courses, {plans.supporting.map(s => `${s.number} (${s.title}, ${s.units} units)`).join(', ')}, for a {18 + plans.supporting.reduce((n, s) => n + s.units, 0)}-unit core; then general education ({plans.ge.plan}, {plans.ge.unitsMin} units, or Cal-GETC for transfer) and an elective as needed to reach 60 degree-applicable units. A <a href="#plan-degree">sample four-semester plan</a> is above.</p>
           {/* TODO(vincent): confirm the supporting-course units and the GE total against the approved requirements (see src/data/plans.json). */}
           <p>Full requirements: <a href={program.catalogUrl}>see the LBCC catalog</a>.</p>
         </div>

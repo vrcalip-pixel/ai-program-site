@@ -23,14 +23,16 @@ const ladderBy = Object.fromEntries(program.ladder.map(r => [r.id, r]));
 const aiUnits = courses.reduce((n, c) => n + c.data.units, 0);
 const supportUnits = plans.supporting.reduce((n, s) => n + s.units, 0);
 const geUnits = plans.ge.unitsMin;
-const electiveUnits = 60 - aiUnits - supportUnits - geUnits;
+const coreUnits = aiUnits + supportUnits;
+const electiveUnits = Math.max(0, 60 - coreUnits - geUnits);
 const needsConfirm = plans.supporting.some(s => s.confirm) || plans.ge.confirm || plans.electives.confirm;
 
 type Item = { kind: string; id?: string; number?: string; area?: string; units?: number; label?: string };
+// a GE row may carry the example course's real units (ENGL C1000 and STAT C1000 are 4) so the plan totals honestly
 function row(it: Item): { code: string; title: string; units: number; href?: string; cls: string } {
   if (it.kind === 'ai') { const c = byId[it.id!]; return { code: c.data.number, title: c.data.title + (c.data.capstone ? ' (capstone)' : ''), units: c.data.units, href: url(`/courses/${c.id}`), cls: 'ai' }; }
   if (it.kind === 'support') { const s = supportBy[it.number!]; return { code: s.number, title: s.title, units: s.units, cls: 'support' }; }
-  if (it.kind === 'ge') { const a = areaBy[it.area!]; return { code: `GE area ${a.id}`, title: `${a.name}, e.g. ${a.example}`, units: a.units, cls: 'ge' }; }
+  if (it.kind === 'ge') { const a = areaBy[it.area!]; return { code: `GE ${a.id}`, title: `${a.name}, e.g. ${a.example.replace(/ \(\d\)$/, '')}`, units: it.units || a.units, cls: 'ge' }; }
   return { code: 'Elective', title: it.label || 'Elective', units: it.units || 0, cls: 'elective' };
 }
 const semesters = plans.degreePlan.semesters.map(s => { const rows = s.items.map(row); return { ...s, rows, units: rows.reduce((n, r) => n + r.units, 0) }; });
@@ -64,7 +66,7 @@ const planTotal = semesters.reduce((n, s) => n + s.units, 0);
   <details class="fold" id="plan-certificates">
     <summary><span>Pursuing a certificate</span><small>three stackable certificates, one to four semesters</small></summary>
     <div class="fold-body">
-      <p class="fold-note">Each certificate is the previous one plus two courses, so a student can stop at any rung with something transcripted, or keep going. Two AI courses a term is a comfortable pace beside work.</p>
+      <p class="fold-note">Each certificate is the previous one plus two courses, so a student can stop at any rung with something to show, or keep going. Two AI courses a term is a comfortable pace beside work.</p>
       <div class="plan-grid">
         {plans.certificatePlans.map(cp => { const r = ladderBy[cp.id]; return (
           <article class="plan-card">
@@ -81,6 +83,7 @@ const planTotal = semesters.reduce((n, s) => n + s.units, 0);
           </article>
         ); })}
       </div>
+      <p class="fold-note" style="margin:14px 0 0"><b style="color:var(--ink)">Not ready for credit?</b> {plans.noncredit.number} {plans.noncredit.title} ({plans.noncredit.hours} hours, noncredit). {plans.noncredit.note}</p>
     </div>
   </details>
 
@@ -92,7 +95,7 @@ const planTotal = semesters.reduce((n, s) => n + s.units, 0);
         <li><i class="ai"></i>AI course ({aiUnits} units)</li>
         <li><i class="support"></i>Supporting course ({supportUnits} units)</li>
         <li><i class="ge"></i>General education, {plans.ge.plan} ({geUnits} units)</li>
-        <li><i class="elective"></i>Electives to reach 60 ({electiveUnits} units)</li>
+        <li><i class="elective"></i>Elective as needed to reach 60 ({electiveUnits} units minimum)</li>
       </ul>
       <div class="plan-grid sem">
         {semesters.map(s => (
@@ -107,12 +110,12 @@ const planTotal = semesters.reduce((n, s) => n + s.units, 0);
           </article>
         ))}
       </div>
-      <p class="fold-note" style="margin-top:14px">Total {planTotal} units. A plan is a starting point: which general-education courses satisfy each area, and what transfers in, is settled with an LBCC counselor. <a href={program.catalogUrl}>Full requirements in the LBCC catalog</a>.</p>
+      <p class="fold-note" style="margin-top:14px">Total {planTotal} units against a 60-unit minimum ({coreUnits} core, {geUnits}+ general education, the rest elective). A plan is a starting point: which general-education courses satisfy each area, what double-counts, and what transfers in is settled with an LBCC counselor. <a href={program.catalogUrl}>Full requirements in the LBCC catalog</a>.</p>
     </div>
   </details>
 
   <details class="fold" id="plan-ge">
-    <summary><span>General education and electives</span><small>{plans.ge.plan} areas with example courses; the elective rule</small></summary>
+    <summary><span>General education and electives</span><small>{plans.ge.plan} areas with example courses; recommended focus electives</small></summary>
     <div class="fold-body">
       <p class="fold-note">{plans.ge.unitsNote}</p>
       <div class="tablewrap" tabindex="0" role="region" aria-label="General education areas, supporting courses and electives">
@@ -125,9 +128,22 @@ const planTotal = semesters.reduce((n, s) => n + s.units, 0);
             {plans.supporting.map(s => (
               <tr><td><b>{s.number}</b></td><td>Supporting course: {s.title}</td><td>{s.units}</td><td>Required for the degree{s.note ? <><br /><small style="color:var(--ink-2)">{s.note}</small></> : null}</td></tr>
             ))}
-            <tr><td><b>Electives</b></td><td>Degree-applicable courses to reach 60 units</td><td>{electiveUnits}</td><td>{plans.electives.note}</td></tr>
+            <tr><td><b>Elective</b></td><td>Degree-applicable courses to reach 60 units</td><td>{electiveUnits}+</td><td>{plans.electives.note}</td></tr>
           </tbody>
         </table>
+      </div>
+      <h3 style="font-size:17px;margin:20px 0 8px">Recommended focus electives</h3>
+      <p class="fold-note">One elective is usually enough. These complement the AI courses; any of them counts, and a counselor can suggest others that fit a student's goal.</p>
+      <div class="plan-grid">
+        {plans.electives.focus.map(f => (
+          <article class="plan-card">
+            <header><h3>{f.area}</h3></header>
+            <ul class="plan-rows">
+              {f.courses.map(c => <li class="elective"><i></i><b>{c.number}</b><span>{c.title}</span><em>{c.units}</em></li>)}
+            </ul>
+            <p>{f.why}</p>
+          </article>
+        ))}
       </div>
       <p class="fold-note" style="margin-top:14px">Graduation also requires the LBCC proficiencies (reading, writing, mathematics, information competency), a 2.0 grade-point average and 12 units in residence. Sources: {plans.sources.map((s, i) => <>{i > 0 && '; '}<a href={s.url}>{s.text.split(':')[0]}</a></>)}.</p>
     </div>

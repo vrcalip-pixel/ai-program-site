@@ -85,8 +85,8 @@
   "supportingCourses": [
     { "number": "COSP 38", "title": "Database Concepts" },
     { "number": "CS 31", "title": "Introduction to Computer Science – Python" },
-    { "number": "COSN 250", "title": "Cloud Computing in AWS" }
+    { "number": "COSN 250", "title": "Cloud Computing in Amazon Web Services" }
   ],
-  "_supportingCourses_todo": "TODO(vincent): these are the supporting courses with CORs on file. Supply the full approved degree requirements.",
-  "generalEducationUnits": 15
+  "_supportingCourses_note": "Confirmed against the catalog program sheet (Plan Code 2150), 2026-09-07. Units and plans live in plans.json.",
+  "generalEducationUnits": 27
 }

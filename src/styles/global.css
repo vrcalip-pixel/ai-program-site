@@ -562,6 +562,7 @@ body.handsfree .hud h1,body.handsfree .hud p{opacity:0;transform:translateY(12px
 @media print{.lab-tabs{display:none}.lab-view{display:block!important;opacity:1;transform:none;margin-bottom:18pt;break-inside:avoid}.lab-view[hidden]{display:block!important}.lab-chart,.lab-meters,.lab-tiles li,.lab-latest,.lab-refs{background:#f3f5f7;border-color:#ccc;break-inside:avoid}.lab-tip,.lab-toggle{display:none!important}.lab-fill,.lab-segs i,.lab-legend i{opacity:.7;background:#888}.lab-row.emph .lab-fill,.lab-segs i.emph,.lab-legend i.emph,.lab-meter i,.lab-point i{background:var(--brass);opacity:1}.lab-fill,.lab-meter i,.lab-segs i{width:var(--w,auto)}.lab-grid{background:#ddd}.lab-hline{stroke:#ddd}.lab-refs ol{font-size:10pt}.lab-refs summary::before{display:none}}
 
 /* people (about page): one card per person; photo beside the bio on wide screens, above it on phones */
+.people,.person{scroll-margin-top:calc(var(--navh) + 20px)}
 .persons{list-style:none;display:grid;gap:20px;margin-top:8px}
 .person{display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:40px;align-items:start;padding:28px;border-radius:var(--r);background:var(--plum-2);border:1px solid rgba(238,242,245,.1)}
 .person .photo{margin:0;border-radius:16px;overflow:hidden;background:rgba(238,242,245,.06);border:1px solid rgba(212,160,84,.35);aspect-ratio:2/3}

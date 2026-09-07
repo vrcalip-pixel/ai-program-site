@@ -26,6 +26,17 @@ test('Swipe fires on fast horizontal travel and ignores vertical or slow movemen
   dir = 0;
   for (let i = 0; i <= 8; i++) dir = s.push(0.7 - i * 0.05, 0.5, 3000 + i * 40) || dir;        // leftward
   assert.equal(dir, -1);
+  s.reset();
+  for (let i = 0; i <= 3; i++) s.push(0.3 + i * 0.03, 0.5, 4000 + i * 40);
+  assert.ok(Math.abs(s.peek() - 0.09) < 1e-9);                                                  // peek reports travel so far
+});
+
+test('Swipe survives a short tracking dropout mid-swipe when the caller keeps its history', () => {
+  const s = new Swipe({ windowMs: 500, minDx: 0.22, maxDyRatio: 0.9 });
+  let dir = 0;
+  for (let i = 0; i <= 3; i++) dir = s.push(0.3 + i * 0.04, 0.5, i * 33) || dir;
+  for (let i = 8; i <= 12; i++) dir = s.push(0.3 + i * 0.04, 0.52, i * 33) || dir;              // frames 4-7 missing
+  assert.equal(dir, 1);
 });
 
 test('Dwell fires once after resting on a target, never on empty space, and re-arms after moving away', () => {

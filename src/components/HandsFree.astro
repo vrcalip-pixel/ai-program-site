@@ -11,8 +11,8 @@
  * Four gestures (simplified 2026-09-07 after real use; the earlier pinch, palm push/pull, head turn, nod and shake
  * were hard to perform reliably):
  *   point .......... the index fingertip drives a cursor; nodes and buttons highlight under it
- *   hold ........... rest the cursor on a node or button for about 1.5 s; a ring fills, then it activates
- *   swipe left ..... next (Deeper), as if scrolling on
+ *   hold ........... rest the cursor on a node or button for just over half a second; a ring fills, then it activates
+ *   swipe left ..... next (Deeper), as if scrolling on: the fingertip travels sideways across the frame within half a second
  *   swipe right .... back
  * Steadiness: a One Euro filter on the fingertip, a central slice of the camera frame mapped to the whole screen
  * (less arm travel), and the cursor eased every animation frame between camera frames. Only one model runs, so the
@@ -51,12 +51,14 @@ import { BASE } from '../lib/url';
     filterBeta: 0.02,     // One Euro: higher = quicker to follow fast movement
     cursorEase: 0.45,     // per animation frame, how far the drawn cursor moves toward the filtered target (0..1)
     hitRadius: 64,        // px: a node within this distance of the cursor counts as under it
-    dwellMs: 1500,        // hold this long over a node or button to activate it
+    dwellMs: 600,         // hold this long over a node or button to activate it (1500 felt too long in real use)
     dwellRadius: 26,      // px: the cursor may wander this far while holding
     dwellRearm: 70,       // px: after activating, move this far away before another hold can fire
-    swipeWindow: 450,     // ms over which a swipe is judged
-    swipeMinDx: 0.28,     // fraction of frame width the wrist must travel sideways
-    swipeMaxDyRatio: 0.6, // vertical travel allowed, as a fraction of the sideways travel
+    swipeWindow: 500,     // ms over which a swipe is judged
+    swipeMinDx: 0.22,     // fraction of frame width the fingertip must travel sideways
+    swipeMaxDyRatio: 0.9, // vertical travel allowed, as a fraction of the sideways travel (a diagonal still counts)
+    handGrace: 300,       // ms a hand may drop out of tracking mid-swipe before the swipe history is cleared
+    trackConfidence: 0.4, // MediaPipe detection, presence and tracking confidence (lower keeps a fast-moving hand)
     navGap: 900,          // ms between swipes
     minFps: 15,           // below this (after the first window) camera control turns itself off
     fpsWindow: 3000,      // ms per frame-rate measurement
@@ -83,7 +85,7 @@ import { BASE } from '../lib/url';
   let on = false, starting = false, stream: MediaStream | null = null, hands: any = null, raf = 0, delegate = '';
   let lastVideoTime = -1, frames = 0, fpsT0 = 0, warm = 0, frameNo = 0, fps = 0;
   const target = { x: innerWidth / 2, y: innerHeight / 2 }, cur = { x: innerWidth / 2, y: innerHeight / 2 };
-  let handSeen = false, lastNav = 0, lastGesture = '', lastGestureAt = 0, lastTargetKey: string | null = null, dwellProgress = 0, speed = 0, lastT = 0;
+  let handSeen = false, lastHandAt = 0, lastNav = 0, lastGesture = '', lastGestureAt = 0, lastTargetKey: string | null = null, dwellProgress = 0, speed = 0, lastT = 0;
   const fx = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta), fy = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta);
   const swipe = new Swipe({ windowMs: TUNE.swipeWindow, minDx: TUNE.swipeMinDx, maxDyRatio: TUNE.swipeMaxDyRatio });
   const dwell = new Dwell({ ms: TUNE.dwellMs, radius: TUNE.dwellRadius, rearm: TUNE.dwellRearm });
@@ -112,7 +114,7 @@ import { BASE } from '../lib/url';
       cam.srcObject = stream; await cam.play();
       const mp: any = await import('@mediapipe/tasks-vision');
       const vision = await mp.FilesetResolver.forVisionTasks(`${BASE}/mediapipe/wasm`);
-      const make = async (del: 'GPU' | 'CPU') => { const h = await mp.HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: MODEL, delegate: del }, runningMode: 'VIDEO', numHands: 1 }); delegate = del; return h; };
+      const make = async (del: 'GPU' | 'CPU') => { const h = await mp.HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: MODEL, delegate: del }, runningMode: 'VIDEO', numHands: 1, minHandDetectionConfidence: TUNE.trackConfidence, minHandPresenceConfidence: TUNE.trackConfidence, minTrackingConfidence: TUNE.trackConfidence }); delegate = del; return h; };
       try { hands = await make('GPU'); } catch { hands = await make('CPU'); }
       if (!document.body.classList.contains('ambient')) { starting = false; stop(); return; }
       on = true; frames = 0; warm = 0; fps = 0; fpsT0 = performance.now(); lastVideoTime = -1; handSeen = false;
@@ -160,6 +162,7 @@ import { BASE } from '../lib/url';
       `hands-free debug  ${delegate}  ${fps.toFixed(0)} fps\n` +
       `hand   ${handSeen ? 'yes' : 'no '}  cursor ${cur.x.toFixed(0)},${cur.y.toFixed(0)}  speed ${speed.toFixed(0)} px/s\n` +
       `over   ${lastTargetKey || '–'}  hold ${(dwellProgress * 100).toFixed(0)}%\n` +
+      `swipe  ${(swipe.peek() >= 0 ? '+' : '')}${swipe.peek().toFixed(2)} of frame (fires at ±${TUNE.swipeMinDx}; + is toward your left)\n` +
       `last   ${ago}`;
   }
 
@@ -191,15 +194,16 @@ import { BASE } from '../lib/url';
     const lm = hr && hr.landmarks && hr.landmarks[0];
     if (lm) {
       const W = innerWidth, H = innerHeight;
-      const tip = lm[8], wrist = lm[0];
+      const tip = lm[8]; lastHandAt = now;
       // mirrored, then the central `reach` slice of the frame stretched to the whole screen
       const nx = clamp(((1 - tip.x) - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
       const ny = clamp((tip.y - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
       target.x = fx.filter(nx * W, now); target.y = fy.filter(ny * H, now);
       if (!handSeen) { handSeen = true; cur.x = target.x; cur.y = target.y; cursor.classList.add('on'); flash('point'); }
 
-      // swipe: the wrist travelling sideways across the frame (raw x grows toward the viewer's left because the image is mirrored)
-      const dir = swipe.push(wrist.x, wrist.y, now);
+      // swipe: the fingertip travelling sideways across the frame (raw x grows toward the viewer's left because the image is mirrored).
+      // The fingertip, not the wrist: a wave from the wrist barely moves the wrist.
+      const dir = swipe.push(tip.x, tip.y, now);
       if (dir && now - lastNav > TUNE.navGap) {
         lastNav = now; dwell.reset();
         if (dir > 0) { map().step(1); flash('next'); } else { map().step(-1); flash('back'); }
@@ -211,7 +215,8 @@ import { BASE } from '../lib/url';
       const d = dwell.update(cur.x, cur.y, now, t ? t.key : null);
       dwellProgress = d.progress; cursor.style.setProperty('--p', d.progress.toFixed(3));
       if (d.fire && t) { t.fire(); flash('hold'); }
-    } else if (handSeen) {
+    } else if (handSeen && now - lastHandAt > TUNE.handGrace) {
+      // the hand has been gone for longer than a blink of lost tracking: hide the cursor and forget the gesture history
       handSeen = false; cursor.classList.remove('on'); cursor.style.setProperty('--p', '0');
       fx.reset(); fy.reset(); swipe.reset(); dwell.reset(); lastTargetKey = null; dwellProgress = 0;
       map().pointer(-1e4, -1e4);

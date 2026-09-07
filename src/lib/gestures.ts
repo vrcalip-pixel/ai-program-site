@@ -34,6 +34,8 @@ export class Swipe {
     if (Math.abs(dx) >= this.opts.minDx && Math.abs(dy) <= this.opts.maxDyRatio * Math.abs(dx)) { this.hist = []; return Math.sign(dx); }
     return 0;
   }
+  /** Signed sideways travel currently in the window, for the debug overlay. */
+  peek(): number { if (this.hist.length < 2) return 0; const f = this.hist[0], l = this.hist[this.hist.length - 1]; return l.x - f.x; }
   reset() { this.hist = []; }
 }
 

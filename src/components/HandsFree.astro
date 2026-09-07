@@ -13,7 +13,8 @@
  *   point .......... the index fingertip drives a cursor; nodes and buttons highlight under it
  *   hold ........... rest the cursor on a node or button for just over half a second; a ring fills, then it activates
  *   swipe left ..... next (Deeper), as if scrolling on: the fingertip travels sideways across the frame within half a second
- *   swipe right .... back
+ *   fist ........... back: close the hand and hold it for a third of a second (a swipe right collided with the hand
+ *                    returning after a swipe left, so back is a different shape, not a different direction)
  * Steadiness: a One Euro filter on the fingertip, a central slice of the camera frame mapped to the whole screen
  * (less arm travel), and the cursor eased every animation frame between camera frames. Only one model runs, so the
  * loop tracks at the camera's frame rate. The interpretation lives in src/lib/gestures.ts (unit tests in tests/).
@@ -35,12 +36,12 @@ import { BASE } from '../lib/url';
     <li data-g="point"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 11V9.5a1.5 1.5 0 0 1 3 0V13"/><path d="M15 12.5a1.5 1.5 0 0 1 3 0V15"/><path d="M9 12l-1.6-1.6a1.6 1.6 0 0 0-2.6 1.3c.2 3.3 1.3 5.8 3.7 7.8 1 .9 2.3 1.5 3.7 1.5H14a4 4 0 0 0 4-4v-2"/></svg><b>Point</b><span>cursor</span></li>
     <li data-g="hold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5"/><circle cx="12" cy="12" r="2.2"/></svg><b>Hold</b><span>select</span></li>
     <li data-g="next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5"/><path d="m10 7-5 5 5 5"/></svg><b>Swipe left</b><span>next</span></li>
-    <li data-g="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="m14 7 5 5-5 5"/></svg><b>Swipe right</b><span>back</span></li>
+    <li data-g="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V9a2 2 0 0 1 4 0v2"/><path d="M11 10V8a2 2 0 0 1 4 0v3"/><path d="M15 10.5V9a2 2 0 0 1 4 0v5a6 6 0 0 1-6 6h-2.5a5.5 5.5 0 0 1-5.5-5.5V13a2 2 0 0 1 2-2h4"/></svg><b>Fist</b><span>back</span></li>
   </ul>
 </div>
 
 <script>
-  import { OneEuro, Swipe, Dwell } from '../lib/gestures';
+  import { OneEuro, Swipe, Dwell, isFist, Fist } from '../lib/gestures';
 
   const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 
@@ -59,7 +60,10 @@ import { BASE } from '../lib/url';
     swipeMaxDyRatio: 0.9, // vertical travel allowed, as a fraction of the sideways travel (a diagonal still counts)
     handGrace: 300,       // ms a hand may drop out of tracking mid-swipe before the swipe history is cleared
     trackConfidence: 0.4, // MediaPipe detection, presence and tracking confidence (lower keeps a fast-moving hand)
-    navGap: 900,          // ms between swipes
+    navGap: 900,          // ms between travel gestures
+    fistHoldMs: 350,      // hold a fist this long to go back
+    fistOpenMs: 250,      // the hand must be open this long before another fist counts
+    fistCurl: 1.05,       // a finger is curled when its tip is closer to the wrist than its middle joint (times this)
     minFps: 15,           // below this (after the first window) camera control turns itself off
     fpsWindow: 3000,      // ms per frame-rate measurement
   };
@@ -89,6 +93,8 @@ import { BASE } from '../lib/url';
   const fx = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta), fy = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta);
   const swipe = new Swipe({ windowMs: TUNE.swipeWindow, minDx: TUNE.swipeMinDx, maxDyRatio: TUNE.swipeMaxDyRatio });
   const dwell = new Dwell({ ms: TUNE.dwellMs, radius: TUNE.dwellRadius, rearm: TUNE.dwellRearm });
+  const fist = new Fist({ holdMs: TUNE.fistHoldMs, openMs: TUNE.fistOpenMs });
+  let fistNow = false, fistProgress = 0;
   const flashTimers: Record<string, any> = {};
   let hideTimer: any = 0;
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -118,7 +124,7 @@ import { BASE } from '../lib/url';
       try { hands = await make('GPU'); } catch { hands = await make('CPU'); }
       if (!document.body.classList.contains('ambient')) { starting = false; stop(); return; }
       on = true; frames = 0; warm = 0; fps = 0; fpsT0 = performance.now(); lastVideoTime = -1; handSeen = false;
-      fx.reset(); fy.reset(); swipe.reset(); dwell.reset();
+      fx.reset(); fy.reset(); swipe.reset(); dwell.reset(); fist.reset();
       document.body.classList.add('handsfree');
       clearTimeout(hideTimer); legend.hidden = false;
       requestAnimationFrame(() => requestAnimationFrame(() => legend.classList.add('show')));
@@ -161,8 +167,8 @@ import { BASE } from '../lib/url';
     debugEl.textContent =
       `hands-free debug  ${delegate}  ${fps.toFixed(0)} fps\n` +
       `hand   ${handSeen ? 'yes' : 'no '}  cursor ${cur.x.toFixed(0)},${cur.y.toFixed(0)}  speed ${speed.toFixed(0)} px/s\n` +
-      `over   ${lastTargetKey || '–'}  hold ${(dwellProgress * 100).toFixed(0)}%\n` +
-      `swipe  ${(swipe.peek() >= 0 ? '+' : '')}${swipe.peek().toFixed(2)} of frame (fires at ±${TUNE.swipeMinDx}; + is toward your left)\n` +
+      `over   ${lastTargetKey || '–'}  hold ${(dwellProgress * 100).toFixed(0)}%  fist ${fistNow ? 'yes' : 'no '} ${(fistProgress * 100).toFixed(0)}%\n` +
+      `swipe  ${(swipe.peek() >= 0 ? '+' : '')}${swipe.peek().toFixed(2)} of frame (next fires at +${TUNE.swipeMinDx}; + is toward your left)\n` +
       `last   ${ago}`;
   }
 
@@ -195,22 +201,29 @@ import { BASE } from '../lib/url';
     if (lm) {
       const W = innerWidth, H = innerHeight;
       const tip = lm[8]; lastHandAt = now;
-      // mirrored, then the central `reach` slice of the frame stretched to the whole screen
-      const nx = clamp(((1 - tip.x) - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
-      const ny = clamp((tip.y - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
-      target.x = fx.filter(nx * W, now); target.y = fy.filter(ny * H, now);
+      fistNow = isFist(lm, TUNE.fistCurl);
+      // mirrored, then the central `reach` slice of the frame stretched to the whole screen. Frozen while the hand is a fist
+      // (the fingertip folds into the palm and would drag the cursor away).
+      if (!fistNow) {
+        const nx = clamp(((1 - tip.x) - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
+        const ny = clamp((tip.y - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
+        target.x = fx.filter(nx * W, now); target.y = fy.filter(ny * H, now);
+      }
       if (!handSeen) { handSeen = true; cur.x = target.x; cur.y = target.y; cursor.classList.add('on'); flash('point'); }
+      cursor.classList.toggle('fist', fistNow);
+
+      // fist, held: back. Fires once; the hand must open again before another counts.
+      const fr = fist.update(fistNow, now); fistProgress = fr.progress;
+      if (fr.fire && now - lastNav > TUNE.navGap) { lastNav = now; swipe.reset(); dwell.reset(); map().step(-1); flash('back'); }
 
       // swipe: the fingertip travelling sideways across the frame (raw x grows toward the viewer's left because the image is mirrored).
       // The fingertip, not the wrist: a wave from the wrist barely moves the wrist.
-      const dir = swipe.push(tip.x, tip.y, now);
-      if (dir && now - lastNav > TUNE.navGap) {
-        lastNav = now; dwell.reset();
-        if (dir > 0) { map().step(1); flash('next'); } else { map().step(-1); flash('back'); }
-      }
+      // Only a swipe toward the viewer's left counts (next); the hand coming back the other way is ignored, and a fist never swipes.
+      const dir = fistNow ? 0 : swipe.push(tip.x, tip.y, now);
+      if (dir > 0 && now - lastNav > TUNE.navGap) { lastNav = now; dwell.reset(); map().step(1); flash('next'); }
 
       // hold: rest on a node or button to activate it; the ring on the cursor shows progress
-      const t = speed > 900 ? null : targetAt(cur.x, cur.y);          // a fast-moving hand is not holding
+      const t = speed > 900 || fistNow ? null : targetAt(cur.x, cur.y);   // a fast-moving hand, or a fist, is not holding
       lastTargetKey = t ? t.key : null;
       const d = dwell.update(cur.x, cur.y, now, t ? t.key : null);
       dwellProgress = d.progress; cursor.style.setProperty('--p', d.progress.toFixed(3));
@@ -218,7 +231,8 @@ import { BASE } from '../lib/url';
     } else if (handSeen && now - lastHandAt > TUNE.handGrace) {
       // the hand has been gone for longer than a blink of lost tracking: hide the cursor and forget the gesture history
       handSeen = false; cursor.classList.remove('on'); cursor.style.setProperty('--p', '0');
-      fx.reset(); fy.reset(); swipe.reset(); dwell.reset(); lastTargetKey = null; dwellProgress = 0;
+      fx.reset(); fy.reset(); swipe.reset(); dwell.reset(); fist.reset(); lastTargetKey = null; dwellProgress = 0; fistNow = false; fistProgress = 0;
+      cursor.classList.remove('fist');
       map().pointer(-1e4, -1e4);
     }
 

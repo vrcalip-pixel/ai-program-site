@@ -350,6 +350,7 @@ body.handsfree .hud h1,body.handsfree .hud p{opacity:0;transform:translateY(12px
 @media (max-width:820px){.hf-legend{bottom:86px}#map.focused ~ .hf-legend.show{opacity:0}}
 .hf-cursor{position:fixed;left:0;top:0;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:2px solid var(--brass);background:rgba(212,160,84,.12);box-shadow:0 0 0 4px rgba(212,160,84,.16),0 0 22px rgba(212,160,84,.55);pointer-events:none;z-index:60;opacity:0;transition:opacity .2s;will-change:transform;--p:0}
 .hf-cursor.on{opacity:1}
+.hf-cursor.fist{background:rgba(212,160,84,.55);transform-origin:center}
 /* hold-to-select: a ring around the cursor fills as the hold progresses */
 .hf-cursor .ring{position:absolute;inset:-10px;border-radius:50%;background:conic-gradient(var(--ink) calc(var(--p)*360deg),transparent 0);-webkit-mask:radial-gradient(circle,transparent 62%,#000 64%);mask:radial-gradient(circle,transparent 62%,#000 64%);opacity:calc(min(1,var(--p)*4))}
 .hf-debug{position:fixed;left:4vw;top:calc(var(--navh) + 10px);z-index:61;margin:0;padding:10px 12px;border-radius:12px;font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;color:var(--ink);background:rgba(19,36,52,.88);border:1px solid rgba(238,242,245,.14);backdrop-filter:blur(12px);pointer-events:none}

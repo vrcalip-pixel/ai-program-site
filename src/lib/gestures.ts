@@ -61,3 +61,34 @@ export class Dwell {
   }
   reset() { this.anchor = null; this.firedAt = null; }
 }
+
+/** A hand is a fist when the four fingertips sit closer to the wrist than their middle joints do (MediaPipe landmark indices). */
+export function isFist(lm: { x: number; y: number }[], curlRatio = 1.05, minCurled = 4): boolean {
+  const d = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+  const wrist = lm[0]; const tips = [8, 12, 16, 20], pips = [6, 10, 14, 18];
+  let curled = 0;
+  for (let i = 0; i < 4; i++) if (d(lm[tips[i]], wrist) < d(lm[pips[i]], wrist) * curlRatio) curled++;
+  return curled >= minCurled;
+}
+
+/** Held fist: fires once after the fist has been held `holdMs`; will not fire again until the hand has been open for `openMs`. */
+export class Fist {
+  private since: number | null = null; private openSince: number | null = null; private armed = true;
+  opts: { holdMs: number; openMs: number };
+  constructor(opts = { holdMs: 350, openMs: 250 }) { this.opts = opts; }
+  update(fist: boolean, t: number): { progress: number; fire: boolean } {
+    if (!fist) {
+      this.since = null;
+      if (this.openSince === null) this.openSince = t;
+      if (!this.armed && t - this.openSince >= this.opts.openMs) this.armed = true;
+      return { progress: 0, fire: false };
+    }
+    this.openSince = null;
+    if (!this.armed) return { progress: 0, fire: false };
+    if (this.since === null) this.since = t;
+    const progress = Math.min(1, (t - this.since) / this.opts.holdMs);
+    if (progress >= 1) { this.armed = false; this.since = null; return { progress: 1, fire: true }; }
+    return { progress, fire: false };
+  }
+  reset() { this.since = null; this.openSince = null; this.armed = true; }
+}

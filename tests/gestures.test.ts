@@ -1,7 +1,7 @@
 // Run with: node --experimental-strip-types --test tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OneEuro, Swipe, Dwell } from '../src/lib/gestures.ts';
+import { OneEuro, Swipe, Dwell, isFist, Fist } from '../src/lib/gestures.ts';
 
 test('OneEuro damps jitter when still and follows fast motion', () => {
   const f = new OneEuro(1.0, 0.02);
@@ -59,4 +59,33 @@ test('Dwell restarts when the cursor drifts past the radius', () => {
   assert.ok(p > 0.6);
   p = d.update(140, 100, 750, 'k').progress;    // 40px away: anchor resets
   assert.equal(p, 0);
+});
+
+// synthetic hands: wrist at the origin, fingers along +y; tips beyond the middle joints when open, inside them when curled
+function hand(open: boolean) {
+  const lm = Array.from({ length: 21 }, () => ({ x: 0, y: 0 }));
+  const pips = [6, 10, 14, 18], tips = [8, 12, 16, 20];
+  pips.forEach((p, i) => { lm[p] = { x: i * 0.05, y: 0.5 }; });
+  tips.forEach((t, i) => { lm[t] = { x: i * 0.05, y: open ? 0.8 : 0.35 }; });
+  return lm;
+}
+
+test('isFist tells a curled hand from an open one', () => {
+  assert.equal(isFist(hand(false)), true);
+  assert.equal(isFist(hand(true)), false);
+});
+
+test('Fist fires once after being held, not while held, and re-arms only after the hand opens', () => {
+  const f = new Fist({ holdMs: 350, openMs: 250 });
+  let fired = 0;
+  for (let t = 0; t <= 200; t += 33) if (f.update(true, t).fire) fired++;           // too short
+  assert.equal(fired, 0);
+  for (let t = 233; t <= 1500; t += 33) if (f.update(true, t).fire) fired++;        // held on: fires exactly once
+  assert.equal(fired, 1);
+  for (let t = 1533; t <= 1600; t += 33) f.update(false, t);                        // opened briefly (< openMs)
+  for (let t = 1633; t <= 2200; t += 33) if (f.update(true, t).fire) fired++;       // closed again too soon: nothing
+  assert.equal(fired, 1);
+  for (let t = 2233; t <= 2600; t += 33) f.update(false, t);                        // open long enough
+  for (let t = 2633; t <= 3100; t += 33) if (f.update(true, t).fire) fired++;       // fires again
+  assert.equal(fired, 2);
 });

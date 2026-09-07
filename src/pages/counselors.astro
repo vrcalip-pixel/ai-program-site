@@ -5,6 +5,7 @@ import program from '../data/program.json';
 import { url } from '../lib/url';
 import { breadcrumbs } from '../lib/schema';
 import Plans from '../components/Plans.astro';
+import IndustryCredentials from '../components/IndustryCredentials.astro';
 import plans from '../data/plans.json';
 
 const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b.data.order);
@@ -78,6 +79,8 @@ const courses = (await getCollection('courses')).sort((a, b) => a.data.order - b
         <Plans courses={courses} />
       </div>
     </section>
+
+    <IndustryCredentials courses={courses} />
 
     <section class="block">
       <div class="wrap two">

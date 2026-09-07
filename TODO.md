@@ -61,3 +61,5 @@ Done in this pass: the map keeps AI 40 in frame on phones; "Where are you on the
 
 - Refresh the labor dashboard each year when BLS publishes new projections (late August), OEWS (spring) and the AI Index (April); the LA/OC Centers of Excellence reports and CA EDD projections when they update.
 - Student work showcase on the course pages, once there is work to show (item 12).
+
+19. **Confirm the credential-to-course pairings** — `src/data/credentials.json` (`pairs`, `status`). IBM SkillsBuild in AI 40 and Azure AI Fundamentals prepared for in AI 40 are Vincent's; Google (AI 45), OpenAI (AI 45, AI 60), Anthropic (AI 60, AI 70) and AWS (AI 65, beside COSN 250) are the site's suggestions and read "Suggested" until changed. Costs were the issuers' US list prices in September 2026; re-check each term. If official logos are wanted in the brand tiles, each owner's brand permission is needed and BRIEF §4 (no new colours) would need Vincent's exception.

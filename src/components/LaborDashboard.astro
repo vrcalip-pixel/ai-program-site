@@ -1,138 +1,243 @@
 ---
 /**
  * "AI at work, by the numbers": the labor-market dashboard on the employers page (BRIEF §7).
- * Every figure comes from src/data/labor.json, where each one names its source; the APA 7 reference list
- * at the bottom is generated from the same file, so a number can never appear without its citation.
- * Charts are plain HTML bars rendered at build time (no chart library) so they stay readable on a phone; a small
- * script adds hover and keyboard tooltips and a table view for each chart. Colours are the site's own tokens: brass for the marks that matter,
- * secondary ink for context bars. Nothing here is an outcome of this program, and the copy says so.
+ * Six views, one button each; every view is one or two charts with a single takeaway. Every figure comes from
+ * src/data/labor.json, where each one names its source; the APA 7 reference list is generated from the same file
+ * (collapsed by default, and it opens when a citation is followed), so a number can never appear without its citation.
+ * Charts are plain HTML (bars, meters, one small SVG line) so they stay readable on a phone. A small script handles the
+ * tabs (keyboard arrows, #labor-<view> deep links), hover and keyboard tooltips, and the table view of each chart.
+ * Colours are the site's own tokens: brass for the marks that matter, secondary ink for context. Nothing here is an
+ * outcome of this program, and the copy says so.
  */
 import labor from '../data/labor.json';
+import Bars from './labor/Bars.astro';
+import Meters from './labor/Meters.astro';
+import type { Src } from './labor/types';
 
-type Row = { name: string; value: number; wage?: number; source?: string };
-const S = labor.sources as Record<string, { short: string; apa: string; url: string }>;
-const usedIds = new Set<string>();
-const cite = (id: string) => { usedIds.add(id); return S[id]; };
+const S = labor.sources as Record<string, Omit<Src, 'id'>>;
+const used = new Set<string>();
+const src = (id: string): Src => { used.add(id); return { id, ...S[id] }; };
+const srcs = (ids: string[]) => ids.map(src);
 const money = (n: number) => '$' + n.toLocaleString('en-US');
+const num = (n: number) => n.toLocaleString('en-US');
+const ceilTo = (v: number, step: number) => Math.ceil(v / step) * step;
+const ticks = (max: number, step: number, fmt: (v: number) => string) => { const t: { value: number; label: string }[] = []; for (let v = 0; v <= max + 1e-9; v += step) t.push({ value: v, label: fmt(v) }); return t; };
 
-// horizontal bar charts are plain HTML (a grid of rows), so labels wrap and text stays readable at every width
-function scale(rows: Row[]) {
-  const max = Math.max(...rows.map(r => r.value));
-  const top = Math.ceil(max / 5) * 5;                          // clean axis maximum
-  const step = top > 20 ? 10 : 1;
-  const ticks: number[] = []; for (let t = 0; t <= top; t += step) ticks.push(t);
-  return { top, ticks, pct: (v: number) => (v / top) * 100 };
-}
-const g = scale(labor.growth.rows as Row[]);
-const c = scale(labor.countries.rows as Row[]);
-// register sources used by charts and notes so they appear in the reference list
-[...labor.growth.sources, ...labor.countries.sources, ...labor.regionalSources, labor.latest.source, 'bls-ted'].forEach(cite);
-[...labor.headline, ...labor.regional, ...labor.global].forEach(t => cite(t.source));
-const refs = Object.keys(S).filter(id => usedIds.has(id)).map(id => ({ id, ...S[id] })).sort((a, b) => a.apa.localeCompare(b.apa));
+// ---- view data, shaped for the chart components ----
+const A = labor.adoption, P = labor.pay, G = labor.growth, D = labor.demand, L = labor.local, W = labor.world;
+
+const growthMax = ceilTo(Math.max(...G.bars.rows.map(r => r.value)), 5);
+const growthRows = G.bars.rows.map(r => ({ name: r.name, value: r.value, label: `${r.value}%`, emph: r.name !== G.bars.baseline, extra: r.wage ? `Median annual wage, May 2025: ${money(r.wage)}` : '', aria: `${r.name}: ${r.value}% projected growth, 2025 to 2035${r.wage ? `; median annual wage May 2025 ${money(r.wage)}` : ''}` }));
+
+const wageMax = ceilTo(Math.max(...P.wages.rows.map(r => r.value)), 20000);
+const wageRows = P.wages.rows.map(r => ({ name: r.name, value: r.value, label: money(r.value), emph: r.name !== P.wages.baseline, aria: `${r.name}: median annual wage ${money(r.value)}, May 2025` }));
+
+const countryMax = ceilTo(Math.max(...D.countries.rows.map(r => r.value)), 1);
+const countryRows = D.countries.rows.map(r => ({ name: r.name, value: r.value, label: `${r.value}%`, emph: r.name === D.countries.highlight, aria: `${r.name}: ${r.value}% of job postings mention AI skills, 2025` }));
+const stateMax = ceilTo(Math.max(...D.states.rows.map(r => r.value)), 50000);
+const stateRows = D.states.rows.map(r => ({ name: r.name, value: r.value, label: num(r.value), emph: r.name === D.states.highlight, aria: `${r.name}: ${num(r.value)} AI job postings in 2025` }));
+
+const hourlyMax = ceilTo(Math.max(...L.hourly.rows.map(r => r.value)), 10);
+const hourlyRows = L.hourly.rows.map(r => ({ name: r.name, value: r.value, label: `$${r.value.toFixed(2)}`, emph: r.name === L.hourly.highlight, aria: `${r.name}: mean hourly wage $${r.value.toFixed(2)}, May 2025` }));
+const openingsTotal = L.openings.segments.reduce((a, s) => a + s.value, 0);
+
+const jobsMax = ceilTo(Math.max(...W.jobs.rows.map(r => Math.abs(r.value))), 50);
+const jobsRows = W.jobs.rows.map(r => ({ name: r.name, value: r.value, label: `${r.value > 0 ? '+' : '−'}${Math.abs(r.value)}M`, emph: r.name !== 'Displaced', aria: `${r.name}: ${Math.abs(r.value)} million jobs by 2030${r.value < 0 ? ' displaced' : ''}` }));
+const expMax = ceilTo(Math.max(...W.exposure.rows.map(r => r.value)), 10);
+const expRows = W.exposure.rows.map(r => ({ name: r.name, value: r.value, label: `${r.value}%`, emph: r.name === 'World', aria: `${r.name}: ${r.value}% of jobs have some exposure to generative AI` }));
+
+// adoption trend line geometry (SVG scales uniformly; the labels are HTML so they stay legible on a phone)
+const T = A.trend.points; const LW = 100, LH = 56, pad = 6;
+const lx = (i: number) => pad + (i / (T.length - 1)) * (LW - pad * 2);
+const ly = (v: number) => LH - pad - ((v - 40) / 60) * (LH - pad * 2);          // axis 40–100%
+const linePath = T.map((p, i) => `${i ? 'L' : 'M'}${lx(i).toFixed(2)} ${ly(p.value).toFixed(2)}`).join(' ');
+const areaPath = `${linePath} L${lx(T.length - 1).toFixed(2)} ${LH - pad} L${lx(0).toFixed(2)} ${LH - pad} Z`;
+
+const views = [
+  { id: 'adoption', label: A.label }, { id: 'pay', label: P.label }, { id: 'growth', label: G.label },
+  { id: 'demand', label: D.label }, { id: 'local', label: L.label }, { id: 'world', label: W.label },
+];
+// register every source used, then build the reference list
+[...A.trend.sources, ...P.wages.sources, ...G.bars.sources, G.noteSource, ...D.countries.sources, ...D.states.sources, ...L.hourly.sources, ...L.openings.sources, ...L.noteSources, ...W.jobs.sources, ...W.exposure.sources, labor.latest.source].forEach(src);
+[...A.meters.items, ...P.meters.items, ...D.meters.items, ...W.meters.items, ...L.tiles].forEach(m => src(m.source));
+const refs = Object.keys(S).filter(id => used.has(id)).map(id => ({ id, ...S[id] })).sort((a, b) => a.apa.localeCompare(b.apa));
+const checked = new Date(labor.checked + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 ---
 <section class="block lab" id="labor" aria-labelledby="lab-title">
   <div class="wrap">
     <span class="eyebrow">Labor market</span>
     <h2 id="lab-title">AI at work, by the numbers</h2>
-    <p class="lab-intro">What public sources say about demand for the skills this program teaches: in the United States, in California and Los Angeles–Orange County, and around the world. These are indicators from government statistics and published research, not outcomes of this program, which has not yet graduated a cohort. Each figure links to its source; the full reference list is at the end. Figures checked {new Date(labor.checked + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.</p>
+    <p class="lab-intro">What public sources say about demand for the skills this program teaches. Pick a view. These are indicators from government statistics and published research, not outcomes of this program, which has not yet graduated a cohort. Every figure links to its source; the reference list is at the end. Figures checked {checked}.</p>
 
-    <h3 class="lab-h">Employers and pay</h3>
-    <ul class="lab-tiles">
-      {labor.headline.map(t => { const s = cite(t.source); return (
-        <li><b class="lab-num">{t.value}</b><span class="lab-lbl">{t.label}</span><span class="lab-det">{t.detail}</span><a class="lab-src" href={`#ref-${t.source}`}>{s.short}</a></li>
-      ); })}
-    </ul>
-
-    <div class="lab-charts">
-      <figure class="lab-chart" data-chart="growth">
-        <figcaption><b>{labor.growth.title}</b><span>{labor.growth.subtitle}</span></figcaption>
-        <div class="lab-plot" role="group" aria-label={labor.growth.title}>
-          {(labor.growth.rows as Row[]).map(r => { const emph = r.name !== labor.growth.baseline; return (
-            <div class={`lab-row${emph ? ' emph' : ''}`} tabindex="0" role="img" aria-label={`${r.name}: ${r.value}% projected growth, 2025 to 2035${r.wage ? `; median annual wage May 2025 ${money(r.wage)}` : ''}`} data-name={r.name} data-value={`${r.value}% projected growth`} data-extra={r.wage ? `Median annual wage, May 2025: ${money(r.wage)}` : ''}>
-              <span class="lab-name">{r.name}</span>
-              <span class="lab-track">{g.ticks.map(t => <i class="lab-grid" style={`left:${g.pct(t)}%`}></i>)}<i class="lab-fill" style={`width:${g.pct(r.value)}%`}></i></span>
-              <span class="lab-val">{r.value}%</span>
-            </div>
-          ); })}
-          <div class="lab-axis" aria-hidden="true"><span></span><span class="lab-track">{g.ticks.map(t => <i style={`left:${g.pct(t)}%`}>{t}%</i>)}</span><span></span></div>
-        </div>
-        <div class="lab-tip" hidden aria-hidden="true"></div>
-        <table class="lab-table" hidden>
-          <caption class="sr">{labor.growth.title}</caption>
-          <thead><tr><th scope="col">Occupation</th><th scope="col">Growth 2025–35</th><th scope="col">Median wage, May 2025</th></tr></thead>
-          <tbody>{(labor.growth.rows as Row[]).map(b => <tr><th scope="row">{b.name}</th><td>{b.value}%</td><td>{b.wage ? money(b.wage) : '—'}</td></tr>)}</tbody>
-        </table>
-        <p class="lab-foot"><button type="button" class="lab-toggle" aria-pressed="false">Show as table</button><span>Sources: {labor.growth.sources.map((id, i) => <>{i > 0 && '; '}<a href={`#ref-${id}`}>{S[id].short}</a></>)}.</span></p>
-      </figure>
-
-      <figure class="lab-chart" data-chart="countries">
-        <figcaption><b>{labor.countries.title}</b><span>{labor.countries.subtitle}</span></figcaption>
-        <div class="lab-plot" role="group" aria-label={labor.countries.title}>
-          {(labor.countries.rows as Row[]).map(r => { const emph = r.name === labor.countries.highlight; return (
-            <div class={`lab-row${emph ? ' emph' : ''}`} tabindex="0" role="img" aria-label={`${r.name}: ${r.value}% of job postings mention AI skills, 2025`} data-name={r.name} data-value={`${r.value}% of postings`} data-extra="">
-              <span class="lab-name">{r.name}</span>
-              <span class="lab-track">{c.ticks.map(t => <i class="lab-grid" style={`left:${c.pct(t)}%`}></i>)}<i class="lab-fill" style={`width:${c.pct(r.value)}%`}></i></span>
-              <span class="lab-val">{r.value}%</span>
-            </div>
-          ); })}
-          <div class="lab-axis" aria-hidden="true"><span></span><span class="lab-track">{c.ticks.map(t => <i style={`left:${c.pct(t)}%`}>{t}%</i>)}</span><span></span></div>
-        </div>
-        <div class="lab-tip" hidden aria-hidden="true"></div>
-        <table class="lab-table" hidden>
-          <caption class="sr">{labor.countries.title}</caption>
-          <thead><tr><th scope="col">Labor market</th><th scope="col">Share of postings</th></tr></thead>
-          <tbody>{(labor.countries.rows as Row[]).map(b => <tr><th scope="row">{b.name}</th><td>{b.value}%</td></tr>)}</tbody>
-        </table>
-        <p class="lab-foot"><button type="button" class="lab-toggle" aria-pressed="false">Show as table</button><span>Source: {labor.countries.sources.map(id => <a href={`#ref-${id}`}>{S[id].short}</a>)}, job-posting data from Lightcast.</span></p>
-      </figure>
+    <div class="lab-tabs" role="tablist" aria-label="Choose a view">
+      {views.map((v, i) => <button type="button" role="tab" id={`lab-tab-${v.id}`} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`lab-view-${v.id}`} tabindex={i === 0 ? 0 : -1} data-view={v.id}>{v.label}</button>)}
     </div>
-    <p class="lab-note">{labor.growth.note} <a href="#ref-bls-ted">({S['bls-ted'].short})</a></p>
 
-    <h3 class="lab-h">Closer to home: California and Los Angeles–Orange County</h3>
-    <ul class="lab-tiles">
-      {labor.regional.map(t => { const s = cite(t.source); return (
-        <li><b class="lab-num">{t.value}</b><span class="lab-lbl">{t.label}</span><span class="lab-det">{t.detail}</span><a class="lab-src" href={`#ref-${t.source}`}>{s.short}</a></li>
-      ); })}
-    </ul>
-    <p class="lab-note">{labor.regionalNote} {labor.regionalSources.map((id, i) => <>{i > 0 && ' '}<a href={`#ref-${id}`}>({S[id].short})</a></>)}</p>
+    <div class="lab-views">
+      <!-- Adoption -->
+      <div class="lab-view" id="lab-view-adoption" role="tabpanel" aria-labelledby="lab-tab-adoption" data-view="adoption">
+        <div class="lab-lede"><h3>{A.title}</h3><p>{A.takeaway}</p></div>
+        <div class="lab-grid2">
+          <figure class="lab-chart lab-line" data-chart="adoption">
+            <figcaption><b>{A.trend.title}</b><span>{A.trend.subtitle}</span></figcaption>
+            <div class="lab-lineplot" role="group" aria-label={A.trend.title}>
+              <div class="lab-ylabels" aria-hidden="true">{[100, 80, 60, 40].map(v => <span style={`top:${(ly(v) / LH) * 100}%`}>{v}%</span>)}</div>
+              <div class="lab-linebox">
+                <svg viewBox={`0 0 ${LW} ${LH}`} preserveAspectRatio="none" aria-hidden="true" class="lab-linesvg">
+                  {[100, 80, 60].map(v => <line x1="0" x2={LW} y1={ly(v)} y2={ly(v)} class="lab-hline" vector-effect="non-scaling-stroke" />)}
+                  <path d={areaPath} class="lab-area" />
+                  <path d={linePath} class="lab-path" vector-effect="non-scaling-stroke" />
+                </svg>
+                {T.map((p, i) => (
+                  <button type="button" class={`lab-point${i === T.length - 1 ? ' last' : ''}`} style={`left:${lx(i)}%;top:${(ly(p.value) / LH) * 100}%`} aria-label={`${p.label}: ${p.value}%`} data-name={p.label} data-value={`${p.value}% of organizations`} data-extra=""><i></i></button>
+                ))}
+                <span class="lab-endlabel" style={`left:${lx(T.length - 1)}%;top:${(ly(T[T.length - 1].value) / LH) * 100}%`} aria-hidden="true">{T[T.length - 1].value}%</span>
+              </div>
+              <div class="lab-xlabels" aria-hidden="true">{T.map((p, i) => <span style={`left:${lx(i)}%`}>{p.label}</span>)}</div>
+            </div>
+            <div class="lab-tip" hidden aria-hidden="true"></div>
+            <table class="lab-table" hidden>
+              <caption class="sr">{A.trend.title}</caption>
+              <thead><tr><th scope="col">Survey wave</th><th scope="col">Using AI in at least one function</th></tr></thead>
+              <tbody>{T.map(p => <tr><th scope="row">{p.label}</th><td>{p.value}%</td></tr>)}</tbody>
+            </table>
+            <p class="lab-foot"><button type="button" class="lab-toggle" aria-pressed="false">Show as table</button><span>Sources: {srcs(A.trend.sources).map((s, i) => <>{i > 0 && '; '}<a href={`#ref-${s.id}`}>{s.short}</a></>)}.</span></p>
+          </figure>
+          <Meters title={A.meters.title} items={A.meters.items.map(m => ({ ...m, source: src(m.source) }))} />
+        </div>
+      </div>
 
-    <h3 class="lab-h">Around the world</h3>
-    <ul class="lab-tiles">
-      {labor.global.map(t => { const s = cite(t.source); return (
-        <li><b class="lab-num">{t.value}</b><span class="lab-lbl">{t.label}</span><span class="lab-det">{t.detail}</span><a class="lab-src" href={`#ref-${t.source}`}>{s.short}</a></li>
-      ); })}
-    </ul>
+      <!-- Pay -->
+      <div class="lab-view" id="lab-view-pay" role="tabpanel" aria-labelledby="lab-tab-pay" data-view="pay" hidden>
+        <div class="lab-lede"><h3>{P.title}</h3><p>{P.takeaway}</p></div>
+        <div class="lab-grid2">
+          <Bars id="wages" title={P.wages.title} subtitle={P.wages.subtitle} rows={wageRows} max={wageMax} ticks={ticks(wageMax, 40000, v => `$${v / 1000}k`)} sources={srcs(P.wages.sources)} tableHead={['Occupation', 'Median annual wage']} />
+          <Meters title={P.meters.title} items={P.meters.items.map(m => ({ ...m, source: src(m.source) }))} />
+        </div>
+      </div>
+
+      <!-- Growth -->
+      <div class="lab-view" id="lab-view-growth" role="tabpanel" aria-labelledby="lab-tab-growth" data-view="growth" hidden>
+        <div class="lab-lede"><h3>{G.title}</h3><p>{G.takeaway} <a href={`#ref-${G.noteSource}`}>({S[G.noteSource].short})</a></p></div>
+        <Bars id="growth" title={G.bars.title} subtitle={G.bars.subtitle} rows={growthRows} max={growthMax} ticks={ticks(growthMax, 10, v => `${v}%`)} sources={srcs(G.bars.sources)} tableHead={['Occupation', 'Growth 2025–35', 'Median wage, May 2025']} />
+        <p class="lab-note">{G.note} <a href={`#ref-${G.noteSource}`}>({S[G.noteSource].short})</a></p>
+      </div>
+
+      <!-- Demand -->
+      <div class="lab-view" id="lab-view-demand" role="tabpanel" aria-labelledby="lab-tab-demand" data-view="demand" hidden>
+        <div class="lab-lede"><h3>{D.title}</h3><p>{D.takeaway}</p></div>
+        <div class="lab-grid2">
+          <Bars id="countries" title={D.countries.title} subtitle={D.countries.subtitle} rows={countryRows} max={countryMax} ticks={ticks(countryMax, 1, v => `${v}%`)} sources={srcs(D.countries.sources)} sourceNote="job-posting data from Lightcast" tableHead={['Labor market', 'Share of postings']} />
+          <div class="lab-stack">
+            <Bars id="states" title={D.states.title} subtitle={D.states.subtitle} rows={stateRows} max={stateMax} ticks={ticks(stateMax, 50000, v => `${v / 1000}k`)} sources={srcs(D.states.sources)} sourceNote="job-posting data from Lightcast" tableHead={['State', 'AI postings, 2025']} />
+            <Meters title={D.meters.title} items={D.meters.items.map(m => ({ ...m, source: src(m.source) }))} />
+          </div>
+        </div>
+      </div>
+
+      <!-- Local -->
+      <div class="lab-view" id="lab-view-local" role="tabpanel" aria-labelledby="lab-tab-local" data-view="local" hidden>
+        <div class="lab-lede"><h3>{L.title}</h3><p>{L.takeaway}</p></div>
+        <div class="lab-grid2">
+          <Bars id="hourly" title={L.hourly.title} subtitle={L.hourly.subtitle} rows={hourlyRows} max={hourlyMax} ticks={ticks(hourlyMax, 20, v => `$${v}`)} sources={srcs(L.hourly.sources)} tableHead={['Group', 'Mean hourly wage']} />
+          <div class="lab-stack">
+            <figure class="lab-chart" data-chart="openings">
+              <figcaption><b>{L.openings.title}</b><span>{L.openings.subtitle}</span></figcaption>
+              <div class="lab-stacked" role="img" aria-label={`${L.openings.title}: ${L.openings.segments.map(s => `${s.name} ${num(s.value)}`).join(', ')}, total ${num(openingsTotal)}`}>
+                <b class="lab-num">{(openingsTotal / 1e6).toFixed(2)}M<small> openings</small></b>
+                <span class="lab-segs">{L.openings.segments.map((s, i) => <i class={i === 0 ? 'emph' : ''} style={`width:${(s.value / openingsTotal) * 100}%`}></i>)}</span>
+                <ul class="lab-legend">{L.openings.segments.map((s, i) => <li><i class={i === 0 ? 'emph' : ''}></i><span>{s.name}</span><b>{num(s.value)}</b></li>)}</ul>
+              </div>
+              <p class="lab-foot"><span>Source: {srcs(L.openings.sources).map(s => <a href={`#ref-${s.id}`}>{s.short}</a>)}.</span></p>
+            </figure>
+            <ul class="lab-tiles">
+              {L.tiles.map(t => { const s = src(t.source); return <li><b class="lab-num">{t.value}</b><span class="lab-lbl">{t.label}</span><span class="lab-det">{t.detail}</span><a class="lab-src" href={`#ref-${s.id}`}>{s.short}</a></li>; })}
+            </ul>
+          </div>
+        </div>
+        <p class="lab-note">{L.note} {srcs(L.noteSources).map((s, i) => <>{i > 0 && ' '}<a href={`#ref-${s.id}`}>({s.short})</a></>)}</p>
+      </div>
+
+      <!-- World -->
+      <div class="lab-view" id="lab-view-world" role="tabpanel" aria-labelledby="lab-tab-world" data-view="world" hidden>
+        <div class="lab-lede"><h3>{W.title}</h3><p>{W.takeaway}</p></div>
+        <div class="lab-grid2">
+          <Bars id="jobs" title={W.jobs.title} subtitle={W.jobs.subtitle} rows={jobsRows} max={jobsMax} signed ticks={[-200, -100, 0, 100, 200].map(v => ({ value: v, label: `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}M` }))} sources={srcs(W.jobs.sources)} tableHead={['Measure', 'Jobs by 2030']} />
+          <div class="lab-stack">
+            <Bars id="exposure" title={W.exposure.title} subtitle={W.exposure.subtitle} rows={expRows} max={expMax} ticks={ticks(expMax, 10, v => `${v}%`)} sources={srcs(W.exposure.sources)} tableHead={['Group', 'Share of jobs']} />
+            <Meters title={W.meters.title} items={W.meters.items.map(m => ({ ...m, source: src(m.source) }))} />
+          </div>
+        </div>
+      </div>
+    </div>
 
     <p class="lab-latest"><b>{labor.latest.label}.</b> {labor.latest.text} <a href={`#ref-${labor.latest.source}`}>({S[labor.latest.source].short})</a></p>
 
-    <div class="lab-refs" id="lab-refs">
-      <h3>References</h3>
-      <ol>
-        {refs.map(r => <li id={`ref-${r.id}`}><span set:html={r.apa} /></li>)}
-      </ol>
-      <p>APA 7 format. Where this page and a source differ, the source is right; write to the program lead and it will be corrected.</p>
-    </div>
+    <details class="lab-refs" id="lab-refs">
+      <summary><span>References</span><small>{refs.length} sources, APA 7</small></summary>
+      <ol>{refs.map(r => <li id={`ref-${r.id}`}><span set:html={r.apa} /></li>)}</ol>
+      <p>Where this page and a source differ, the source is right; write to the program lead and it will be corrected.</p>
+    </details>
   </div>
 </section>
 
 <script>
-  // hover and keyboard tooltips, plus a table view, for each chart
-  document.querySelectorAll<HTMLElement>('.lab-chart').forEach(fig => {
-    const tip = fig.querySelector<HTMLElement>('.lab-tip')!;
-    const plot = fig.querySelector<HTMLElement>('.lab-plot')!;
-    const show = (bar: HTMLElement) => {
-      tip.innerHTML = `<b>${bar.dataset.name}</b><span>${bar.dataset.value}</span>${bar.dataset.extra ? `<span>${bar.dataset.extra}</span>` : ''}`;
-      const r = bar.querySelector('.lab-fill')!.getBoundingClientRect(), f = fig.getBoundingClientRect();
+  const root = document.getElementById('labor')!;
+  const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  const views = [...root.querySelectorAll<HTMLElement>('.lab-view')];
+  const refs = document.getElementById('lab-refs') as HTMLDetailsElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- views ----
+  function show(id: string, focus = false, pushHash = true) {
+    tabs.forEach(t => { const on = t.dataset.view === id; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    views.forEach(v => {
+      const on = v.dataset.view === id;
+      if (on) { v.hidden = false; v.classList.remove('in'); requestAnimationFrame(() => requestAnimationFrame(() => v.classList.add('in'))); }
+      else { v.hidden = true; v.classList.remove('in'); }
+    });
+    if (pushHash) history.replaceState(null, '', `#labor-${id}`);
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => show(t.dataset.view!));
+    t.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : e.key === 'Home' ? -i : e.key === 'End' ? tabs.length - 1 - i : 0;
+      if (!d) return; e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].dataset.view!, true);
+    });
+  });
+  const fromHash = () => { const m = location.hash.match(/^#labor-([a-z]+)$/); if (m && tabs.some(t => t.dataset.view === m[1])) { show(m[1], false, false); return true; } return false; };
+  if (!fromHash()) show(tabs[0].dataset.view!, false, false);
+  addEventListener('hashchange', () => { fromHash(); });
+
+  // ---- tooltips and table views ----
+  root.querySelectorAll<HTMLElement>('.lab-chart').forEach(fig => {
+    const tip = fig.querySelector<HTMLElement>('.lab-tip'); if (!tip) return;
+    const plot = fig.querySelector<HTMLElement>('.lab-plot, .lab-lineplot')!;
+    const showTip = (el: HTMLElement) => {
+      tip.replaceChildren();
+      const b = document.createElement('b'); b.textContent = el.dataset.value || ''; tip.appendChild(b);
+      const n = document.createElement('span'); n.textContent = el.dataset.name || ''; tip.appendChild(n);
+      if (el.dataset.extra) { const x = document.createElement('span'); x.textContent = el.dataset.extra; tip.appendChild(x); }
+      const mark = el.querySelector<HTMLElement>('.lab-fill, i') || el;
+      const r = mark.getBoundingClientRect(), f = fig.getBoundingClientRect();
       tip.hidden = false;
       const left = Math.min(r.right - f.left + 10, f.width - tip.offsetWidth - 8);
-      tip.style.left = `${Math.max(8, left)}px`; tip.style.top = `${r.top - f.top + r.height / 2 - tip.offsetHeight / 2}px`;
+      tip.style.left = `${Math.max(8, left)}px`; tip.style.top = `${Math.max(4, r.top - f.top + r.height / 2 - tip.offsetHeight / 2)}px`;
     };
     const hide = () => { tip.hidden = true; };
-    plot.querySelectorAll<HTMLElement>('.lab-row').forEach(bar => {
-      bar.addEventListener('mouseenter', () => show(bar)); bar.addEventListener('mouseleave', hide);
-      bar.addEventListener('focus', () => show(bar)); bar.addEventListener('blur', hide);
+    plot.querySelectorAll<HTMLElement>('.lab-row, .lab-point').forEach(el => {
+      el.addEventListener('mouseenter', () => showTip(el)); el.addEventListener('mouseleave', hide);
+      el.addEventListener('focus', () => showTip(el)); el.addEventListener('blur', hide);
     });
-    const btn = fig.querySelector<HTMLButtonElement>('.lab-toggle')!, table = fig.querySelector<HTMLTableElement>('.lab-table')!;
-    btn.addEventListener('click', () => { const on = table.hidden; table.hidden = !on; plot.hidden = on; hide(); btn.setAttribute('aria-pressed', String(on)); btn.textContent = on ? 'Show as chart' : 'Show as table'; });
+    const btn = fig.querySelector<HTMLButtonElement>('.lab-toggle'), table = fig.querySelector<HTMLTableElement>('.lab-table');
+    if (btn && table) btn.addEventListener('click', () => { const on = table.hidden; table.hidden = !on; plot.hidden = on; hide(); btn.setAttribute('aria-pressed', String(on)); btn.textContent = on ? 'Show as chart' : 'Show as table'; });
   });
+
+  // ---- references: open the list when a citation is followed; open everything for print ----
+  root.querySelectorAll<HTMLAnchorElement>('a[href^="#ref-"]').forEach(a => a.addEventListener('click', () => { refs.open = true; }));
+  addEventListener('hashchange', () => { if (location.hash.startsWith('#ref-')) refs.open = true; });
+  if (location.hash.startsWith('#ref-')) { refs.open = true; setTimeout(() => document.getElementById(location.hash.slice(1))?.scrollIntoView(), 50); }
+  addEventListener('beforeprint', () => { refs.open = true; views.forEach(v => { v.hidden = false; v.classList.add('in'); }); });
+  addEventListener('afterprint', () => { fromHash() || show(tabs.find(t => t.getAttribute('aria-selected') === 'true')!.dataset.view!, false, false); });
+  if (reduced) views.forEach(v => v.classList.add('still'));
 </script>

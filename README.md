@@ -18,7 +18,7 @@ You do not need to touch components to change what the site says.
 | Pathway, counselors, employers, about pages | `src/pages/pathway.astro`, `counselors.astro`, `employers.astro`, `about.astro` |
 | The landing map's node text | `src/components/DepthMap.astro` (the `NODES` list) |
 | The request-info form backend (sheet + email) | `scripts/apps-script/Code.gs`, setup in `FORM-SETUP.md`, endpoint in `src/data/program.json` |
-| Hero videos | drop `ai-nn.mp4`, `ai-nn.webm`, `ai-nn.jpg` into `public/video/`, then set `video: true` in that course's frontmatter |
+| Hero videos | `node scripts/hero-video.mjs <clip.mp4> ai-nn` writes `public/video/ai-nn.{mp4,webm,jpg}` as a crossfaded loop (needs ffmpeg on PATH or `FFMPEG=`), then set `video: true` in that course's frontmatter |
 | "Ask the program" answers | `src/data/faq.json` |
 | "Where are you on the ladder?" (pathway checklist) | nothing to edit: it reads `program.json` and the course files |
 | Labor-market dashboard on the employers page (figures, sources, APA 7 references) | `src/data/labor.json`; the component `src/components/LaborDashboard.astro` renders it and builds the reference list from the same file |

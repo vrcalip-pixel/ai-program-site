@@ -43,7 +43,7 @@ Then open the URL it prints.
 
 The Experience button on the map turns on sound, richer visuals and camera control (BRIEF §10). Hand tracking runs in the browser with MediaPipe Tasks Vision; the library is bundled from npm, the WASM is served from this site, and the model file is fetched from Google's model bucket the first time Experience is switched on. No video leaves the device.
 
-Four gestures: point (the index fingertip drives the cursor), hold (rest on a node or button for just over half a second; a ring fills, then it activates), an open hand swept to your left (next course; judged on the palm centre, so a closed or half-closed hand never triggers it) and a held fist (back; a swipe right collided with the hand returning after a swipe left). The interpretation is in `src/lib/gestures.ts` with unit tests in `tests/`; run them with `npm test`.
+Five gestures: point (the index fingertip drives the cursor), hold (rest on a node or button for just over half a second; a ring fills, then it activates), an open hand swept to your left (next course; judged on the palm centre from the moment the hand is in view, and a frame or two of not-quite-open is forgiven), a fist held still (back; a swipe right collided with the hand returning after a swipe left) and a throw aside (reset: open hand closes to a fist, moves to your left while closed, opens again; the map returns to its starting view, the same as the Recenter button). The interpretation is in `src/lib/gestures.ts` with unit tests in `tests/`; run them with `npm test`.
 
 Tuning from real use:
 

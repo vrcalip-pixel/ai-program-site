@@ -27,10 +27,14 @@ export class OneEuro {
  */
 export class Swipe {
   private hist: { x: number; y: number; t: number }[] = [];
-  opts: { windowMs: number; minDx: number; maxDyRatio: number; minSpeed: number };
-  constructor(opts = { windowMs: 900, minDx: 0.18, maxDyRatio: 0.9, minSpeed: 0.3 }) { this.opts = opts; }
+  private lastOpenAt = -Infinity;
+  opts: { windowMs: number; minDx: number; maxDyRatio: number; minSpeed: number; openGraceMs: number };
+  constructor(opts = { windowMs: 900, minDx: 0.18, maxDyRatio: 0.9, minSpeed: 0.3, openGraceMs: 200 }) { this.opts = { openGraceMs: 200, ...opts }; }
   push(x: number, y: number, t: number, open = true): number {
-    if (!open) { this.hist = []; return 0; }                       // a closed or half-closed hand is not swiping
+    // a closed or half-closed hand is not swiping. A brief flicker of "not open" (the first frames after the hand appears,
+    // or a finger the model missed) keeps the run alive; longer than the grace clears it.
+    if (!open) { if (t - this.lastOpenAt > this.opts.openGraceMs) this.hist = []; return 0; }
+    this.lastOpenAt = t;
     this.hist.push({ x, y, t });
     this.hist = this.hist.filter(h => t - h.t <= this.opts.windowMs);
     if (this.hist.length < 3) return 0;
@@ -43,7 +47,7 @@ export class Swipe {
   peek(): number { if (this.hist.length < 2) return 0; const f = this.hist[0], l = this.hist[this.hist.length - 1]; return l.x - f.x; }
   /** 0..1 progress of the current run toward `minDx`, in the given direction (1 = raw x increasing). */
   progress(dir = 1): number { return Math.max(0, Math.min(1, (this.peek() * dir) / this.opts.minDx)); }
-  reset() { this.hist = []; }
+  reset() { this.hist = []; this.lastOpenAt = -Infinity; }
 }
 
 /**
@@ -83,7 +87,8 @@ export class Fist {
   private since: number | null = null; private openSince: number | null = null; private armed = true;
   opts: { holdMs: number; openMs: number };
   constructor(opts = { holdMs: 350, openMs: 250 }) { this.opts = opts; }
-  update(fist: boolean, t: number): { progress: number; fire: boolean } {
+  /** `moving` = the hand is travelling; a fist on the move is a throw or a return, not a hold, so the timer restarts. */
+  update(fist: boolean, t: number, moving = false): { progress: number; fire: boolean } {
     if (!fist) {
       this.since = null;
       if (this.openSince === null) this.openSince = t;
@@ -92,12 +97,14 @@ export class Fist {
     }
     this.openSince = null;
     if (!this.armed) return { progress: 0, fire: false };
+    if (moving) { this.since = null; return { progress: 0, fire: false }; }
     if (this.since === null) this.since = t;
     const progress = Math.min(1, (t - this.since) / this.opts.holdMs);
     if (progress >= 1) { this.armed = false; this.since = null; return { progress: 1, fire: true }; }
     return { progress, fire: false };
   }
   reset() { this.since = null; this.openSince = null; this.armed = true; }
+  disarm() { this.armed = false; this.since = null; }
 }
 
 /** An open hand: at least `minExtended` of the four fingers point away from the wrist (tip farther than the middle joint). */
@@ -114,4 +121,41 @@ export function palmCentre(lm: { x: number; y: number }[]): { x: number; y: numb
   const ids = [0, 5, 9, 13, 17]; let x = 0, y = 0;
   for (const i of ids) { x += lm[i].x; y += lm[i].y; }
   return { x: x / ids.length, y: y / ids.length };
+}
+
+/**
+ * Throw aside, as if tossing something away: an open hand closes to a fist (grab), sweeps sideways while closed (toss)
+ * and opens again (release). Fires on the release, returning the sign of the travel, when the fist phase moved at least
+ * `minDx` at `minSpeed` or more and lasted no longer than `windowMs`. A fist that stays put is a hold, not a throw
+ * (the Fist detector owns that), so the throw quietly abandons after `windowMs` of closed hand. The grab only counts
+ * within `openWithinMs` of the hand last being open, so a fist that arrives already closed never throws.
+ */
+export class Throw {
+  private grab: { x: number; y: number; t: number } | null = null;
+  private lastOpenAt = -Infinity;
+  private peak = 0;                                   // farthest sideways travel while closed, signed
+  opts: { windowMs: number; minDx: number; maxDyRatio: number; minSpeed: number; openWithinMs: number };
+  constructor(opts = { windowMs: 700, minDx: 0.12, maxDyRatio: 0.9, minSpeed: 0.25, openWithinMs: 450 }) { this.opts = { openWithinMs: 450, ...opts }; }
+  /** 0..1: how much of `minDx` the closed hand has travelled so far (for a progress bar). */
+  progress(sign = 1): number { return this.grab ? Math.max(0, Math.min(1, (this.peak * sign) / this.opts.minDx)) : 0; }
+  push(x: number, y: number, t: number, open: boolean, fist: boolean): number {
+    if (fist) {
+      if (!this.grab) {
+        if (t - this.lastOpenAt <= this.opts.openWithinMs) { this.grab = { x, y, t }; this.peak = 0; }   // grab: it was an open hand a moment ago
+      } else if (t - this.grab.t > this.opts.windowMs) {
+        this.grab = null;                                             // held closed too long: not a throw
+      } else {
+        const dx = x - this.grab.x; if (Math.abs(dx) > Math.abs(this.peak)) this.peak = dx;
+      }
+      return 0;
+    }
+    // hand is not a fist: a release if a grab is pending
+    const g = this.grab; this.grab = null;
+    if (open) this.lastOpenAt = t;
+    if (!g) return 0;
+    const dx = x - g.x, dy = y - g.y, dt = Math.max(1, t - g.t) / 1000;
+    if (t - g.t <= this.opts.windowMs && Math.abs(dx) >= this.opts.minDx && Math.abs(dx) / dt >= this.opts.minSpeed && Math.abs(dy) <= this.opts.maxDyRatio * Math.abs(dx)) return Math.sign(dx);
+    return 0;
+  }
+  reset() { this.grab = null; this.lastOpenAt = -Infinity; this.peak = 0; }
 }

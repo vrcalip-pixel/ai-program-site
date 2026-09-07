@@ -1,7 +1,7 @@
 // Run with: node --experimental-strip-types --test tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OneEuro, Swipe, Dwell, isFist, Fist, openHand, palmCentre } from '../src/lib/gestures.ts';
+import { OneEuro, Swipe, Dwell, isFist, Fist, openHand, palmCentre, Throw } from '../src/lib/gestures.ts';
 
 test('OneEuro damps jitter when still and follows fast motion', () => {
   const f = new OneEuro(1.0, 0.02);
@@ -98,4 +98,50 @@ test('Fist fires once after being held, not while held, and re-arms only after t
   for (let t = 2233; t <= 2600; t += 33) f.update(false, t);                        // open long enough
   for (let t = 2633; t <= 3100; t += 33) if (f.update(true, t).fire) fired++;       // fires again
   assert.equal(fired, 2);
+});
+
+test('Swipe keeps its run through a brief not-open flicker but drops it after a longer one', () => {
+  const s = new Swipe({ windowMs: 900, minDx: 0.18, maxDyRatio: 0.9, minSpeed: 0.3, openGraceMs: 200 });
+  let dir = 0;
+  for (let i = 0; i <= 12; i++) dir = s.push(0.4 + i * 0.02, 0.5, i * 40, i !== 2 && i !== 3) || dir;   // two flickering frames
+  assert.equal(dir, 1);
+  dir = 0;
+  for (let i = 0; i <= 5; i++) s.push(0.4 + i * 0.02, 0.5, 2000 + i * 40, true);
+  for (let i = 6; i <= 13; i++) s.push(0.4 + i * 0.02, 0.5, 2000 + i * 40, false);                    // 320 ms not open: run cleared
+  dir = s.push(0.4 + 14 * 0.02, 0.5, 2000 + 14 * 40, true);
+  assert.equal(dir, 0);
+});
+
+test('Fist only counts as a hold while still; a fist on the move never fires back', () => {
+  const f = new Fist({ holdMs: 350, openMs: 250 });
+  let fired = 0;
+  for (let t = 0; t <= 800; t += 33) if (f.update(true, t, true).fire) fired++;       // moving fist
+  assert.equal(fired, 0);
+  for (let t = 833; t <= 1400; t += 33) if (f.update(true, t, false).fire) fired++;   // now still: fires once
+  assert.equal(fired, 1);
+});
+
+test('Throw fires on grab, toss, release; not for a fist that was never open, never moved, or was held too long', () => {
+  const th = new Throw({ windowMs: 700, minDx: 0.12, maxDyRatio: 0.9, minSpeed: 0.25, openWithinMs: 450 });
+  let dir = 0;
+  for (let i = 0; i <= 5; i++) dir = th.push(0.4, 0.5, i * 40, true, false) || dir;                   // open, still
+  for (let i = 6; i <= 12; i++) dir = th.push(0.4 + (i - 6) * 0.025, 0.5, i * 40, false, true) || dir; // closes, sweeps left (raw +x) 0.15 in 240 ms
+  assert.equal(dir, 0);                                                                                // nothing until the release
+  assert.ok(th.progress(1) > 0.9);
+  dir = th.push(0.56, 0.5, 13 * 40, true, false);                                                      // opens: release
+  assert.equal(dir, 1);
+  dir = 0;
+  for (let i = 0; i <= 10; i++) dir = th.push(0.4 + i * 0.02, 0.5, 2000 + i * 40, false, true) || dir; // fist from the start
+  dir = th.push(0.62, 0.5, 2500, true, false) || dir;
+  assert.equal(dir, 0);
+  th.reset(); dir = 0;
+  for (let i = 0; i <= 5; i++) th.push(0.5, 0.5, 4000 + i * 40, true, false);
+  for (let i = 6; i <= 12; i++) th.push(0.5, 0.5, 4000 + i * 40, false, true);                          // closes without moving
+  dir = th.push(0.5, 0.5, 4000 + 13 * 40, true, false);
+  assert.equal(dir, 0);
+  th.reset(); dir = 0;
+  th.push(0.4, 0.5, 6000, true, false);
+  for (let i = 1; i <= 30; i++) th.push(0.4 + i * 0.006, 0.5, 6000 + i * 40, false, true);              // 1.2 s closed: a hold, not a toss
+  dir = th.push(0.6, 0.5, 6000 + 31 * 40, true, false);
+  assert.equal(dir, 0);
 });

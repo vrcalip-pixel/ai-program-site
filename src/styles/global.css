@@ -370,6 +370,9 @@ body.handsfree .hud h1,body.handsfree .hud p{opacity:0;transform:translateY(12px
 .hf-legend b{font-weight:600;color:var(--ink)}
 .hf-legend span{color:var(--ink-2)}
 .hf-legend li.hit,.hf-legend li.hit b,.hf-legend li.hit span,.hf-legend li.hit svg{color:var(--brass)}
+/* the swipe chip fills from the right as an open-hand sweep accumulates, so the visitor sees the gesture registering */
+.hf-legend li{position:relative;padding-bottom:3px}
+.hf-legend li .bar{position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:1px;background:var(--brass);transform-origin:right;transform:scaleX(var(--p,0));opacity:.9}
 @media (max-width:820px){.hf-legend{bottom:86px}body:has(#map.focused) .hf-legend.show{opacity:0}}
 .hf-cursor{position:fixed;left:0;top:0;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:2px solid var(--brass);background:rgba(212,160,84,.12);box-shadow:0 0 0 4px rgba(212,160,84,.16),0 0 22px rgba(212,160,84,.55);pointer-events:none;z-index:60;opacity:0;transition:opacity .2s;will-change:transform;--p:0}
 .hf-cursor.on{opacity:1}

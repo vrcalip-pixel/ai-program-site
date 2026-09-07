@@ -20,22 +20,29 @@ export class OneEuro {
   reset() { this.x = null; this.t = null; this.dx = 0; }
 }
 
-/** Horizontal swipe: the tracked point travels at least `minDx` within `windowMs`, mostly sideways. Returns -1, 0 or 1 (sign of the travel). */
+/**
+ * Open-hand swipe: the palm centre travels at least `minDx` sideways within `windowMs`, at an average speed of at least
+ * `minSpeed` (frame widths per second), mostly horizontally, with the hand open for the whole run. Returns -1, 0 or 1
+ * (sign of the travel). `progress()` reports how far the current run has got, for feedback.
+ */
 export class Swipe {
   private hist: { x: number; y: number; t: number }[] = [];
-  opts: { windowMs: number; minDx: number; maxDyRatio: number };
-  constructor(opts = { windowMs: 450, minDx: 0.28, maxDyRatio: 0.6 }) { this.opts = opts; }
-  push(x: number, y: number, t: number): number {
+  opts: { windowMs: number; minDx: number; maxDyRatio: number; minSpeed: number };
+  constructor(opts = { windowMs: 900, minDx: 0.18, maxDyRatio: 0.9, minSpeed: 0.3 }) { this.opts = opts; }
+  push(x: number, y: number, t: number, open = true): number {
+    if (!open) { this.hist = []; return 0; }                       // a closed or half-closed hand is not swiping
     this.hist.push({ x, y, t });
     this.hist = this.hist.filter(h => t - h.t <= this.opts.windowMs);
     if (this.hist.length < 3) return 0;
     const first = this.hist[0];
-    const dx = x - first.x, dy = y - first.y;
-    if (Math.abs(dx) >= this.opts.minDx && Math.abs(dy) <= this.opts.maxDyRatio * Math.abs(dx)) { this.hist = []; return Math.sign(dx); }
+    const dx = x - first.x, dy = y - first.y, dt = Math.max(1, t - first.t) / 1000;
+    if (Math.abs(dx) >= this.opts.minDx && Math.abs(dx) / dt >= this.opts.minSpeed && Math.abs(dy) <= this.opts.maxDyRatio * Math.abs(dx)) { this.hist = []; return Math.sign(dx); }
     return 0;
   }
-  /** Signed sideways travel currently in the window, for the debug overlay. */
+  /** Signed sideways travel currently in the window. */
   peek(): number { if (this.hist.length < 2) return 0; const f = this.hist[0], l = this.hist[this.hist.length - 1]; return l.x - f.x; }
+  /** 0..1 progress of the current run toward `minDx`, in the given direction (1 = raw x increasing). */
+  progress(dir = 1): number { return Math.max(0, Math.min(1, (this.peek() * dir) / this.opts.minDx)); }
   reset() { this.hist = []; }
 }
 
@@ -91,4 +98,20 @@ export class Fist {
     return { progress, fire: false };
   }
   reset() { this.since = null; this.openSince = null; this.armed = true; }
+}
+
+/** An open hand: at least `minExtended` of the four fingers point away from the wrist (tip farther than the middle joint). */
+export function openHand(lm: { x: number; y: number }[], extRatio = 1.05, minExtended = 3): boolean {
+  const d = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+  const wrist = lm[0]; const tips = [8, 12, 16, 20], pips = [6, 10, 14, 18];
+  let ext = 0;
+  for (let i = 0; i < 4; i++) if (d(lm[tips[i]], wrist) > d(lm[pips[i]], wrist) * extRatio) ext++;
+  return ext >= minExtended;
+}
+
+/** Centre of the palm: the mean of the wrist and the four finger bases. Steadier than any fingertip during a sweep. */
+export function palmCentre(lm: { x: number; y: number }[]): { x: number; y: number } {
+  const ids = [0, 5, 9, 13, 17]; let x = 0, y = 0;
+  for (const i of ids) { x += lm[i].x; y += lm[i].y; }
+  return { x: x / ids.length, y: y / ids.length };
 }

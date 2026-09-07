@@ -12,7 +12,8 @@
  * were hard to perform reliably):
  *   point .......... the index fingertip drives a cursor; nodes and buttons highlight under it
  *   hold ........... rest the cursor on a node or button for just over half a second; a ring fills, then it activates
- *   swipe left ..... next (Deeper), as if scrolling on: the fingertip travels sideways across the frame within half a second
+ *   swipe left ..... next (Deeper), as if moving something along: an open hand sweeps toward your left. Judged on the palm
+ *                    centre (steadier than a fingertip), on distance and speed, and only while the hand is open
  *   fist ........... back: close the hand and hold it for a third of a second (a swipe right collided with the hand
  *                    returning after a swipe left, so back is a different shape, not a different direction)
  * Steadiness: a One Euro filter on the fingertip, a central slice of the camera frame mapped to the whole screen
@@ -35,13 +36,13 @@ import { BASE } from '../lib/url';
   <ul>
     <li data-g="point"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 11V9.5a1.5 1.5 0 0 1 3 0V13"/><path d="M15 12.5a1.5 1.5 0 0 1 3 0V15"/><path d="M9 12l-1.6-1.6a1.6 1.6 0 0 0-2.6 1.3c.2 3.3 1.3 5.8 3.7 7.8 1 .9 2.3 1.5 3.7 1.5H14a4 4 0 0 0 4-4v-2"/></svg><b>Point</b><span>cursor</span></li>
     <li data-g="hold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5"/><circle cx="12" cy="12" r="2.2"/></svg><b>Hold</b><span>select</span></li>
-    <li data-g="next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5"/><path d="m10 7-5 5 5 5"/></svg><b>Swipe left</b><span>next</span></li>
+    <li data-g="next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5"/><path d="m10 7-5 5 5 5"/></svg><b>Open hand, swipe left</b><span>next</span><i class="bar" aria-hidden="true"></i></li>
     <li data-g="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V9a2 2 0 0 1 4 0v2"/><path d="M11 10V8a2 2 0 0 1 4 0v3"/><path d="M15 10.5V9a2 2 0 0 1 4 0v5a6 6 0 0 1-6 6h-2.5a5.5 5.5 0 0 1-5.5-5.5V13a2 2 0 0 1 2-2h4"/></svg><b>Fist</b><span>back</span></li>
   </ul>
 </div>
 
 <script>
-  import { OneEuro, Swipe, Dwell, isFist, Fist } from '../lib/gestures';
+  import { OneEuro, Swipe, Dwell, isFist, Fist, openHand, palmCentre } from '../lib/gestures';
 
   const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 
@@ -55,9 +56,11 @@ import { BASE } from '../lib/url';
     dwellMs: 600,         // hold this long over a node or button to activate it (1500 felt too long in real use)
     dwellRadius: 26,      // px: the cursor may wander this far while holding
     dwellRearm: 70,       // px: after activating, move this far away before another hold can fire
-    swipeWindow: 500,     // ms over which a swipe is judged
-    swipeMinDx: 0.22,     // fraction of frame width the fingertip must travel sideways
+    swipeWindow: 900,     // ms over which a swipe is judged (long enough for a deliberate, open-handed sweep)
+    swipeMinDx: 0.18,     // fraction of frame width the palm centre must travel toward your left
+    swipeMinSpeed: 0.3,   // frame widths per second: slower than this is a drift, not a swipe
     swipeMaxDyRatio: 0.9, // vertical travel allowed, as a fraction of the sideways travel (a diagonal still counts)
+    openFingers: 3,       // fingers that must be extended for the hand to count as open
     handGrace: 300,       // ms a hand may drop out of tracking mid-swipe before the swipe history is cleared
     trackConfidence: 0.4, // MediaPipe detection, presence and tracking confidence (lower keeps a fast-moving hand)
     navGap: 900,          // ms between travel gestures
@@ -91,7 +94,9 @@ import { BASE } from '../lib/url';
   const target = { x: innerWidth / 2, y: innerHeight / 2 }, cur = { x: innerWidth / 2, y: innerHeight / 2 };
   let handSeen = false, lastHandAt = 0, lastNav = 0, lastGesture = '', lastGestureAt = 0, lastTargetKey: string | null = null, dwellProgress = 0, speed = 0, lastT = 0;
   const fx = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta), fy = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta);
-  const swipe = new Swipe({ windowMs: TUNE.swipeWindow, minDx: TUNE.swipeMinDx, maxDyRatio: TUNE.swipeMaxDyRatio });
+  const swipe = new Swipe({ windowMs: TUNE.swipeWindow, minDx: TUNE.swipeMinDx, maxDyRatio: TUNE.swipeMaxDyRatio, minSpeed: TUNE.swipeMinSpeed });
+  const nextChip = legend.querySelector<HTMLElement>('[data-g="next"]')!;
+  let openNow = false;
   const dwell = new Dwell({ ms: TUNE.dwellMs, radius: TUNE.dwellRadius, rearm: TUNE.dwellRearm });
   const fist = new Fist({ holdMs: TUNE.fistHoldMs, openMs: TUNE.fistOpenMs });
   let fistNow = false, fistProgress = 0;
@@ -168,7 +173,7 @@ import { BASE } from '../lib/url';
       `hands-free debug  ${delegate}  ${fps.toFixed(0)} fps\n` +
       `hand   ${handSeen ? 'yes' : 'no '}  cursor ${cur.x.toFixed(0)},${cur.y.toFixed(0)}  speed ${speed.toFixed(0)} px/s\n` +
       `over   ${lastTargetKey || '–'}  hold ${(dwellProgress * 100).toFixed(0)}%  fist ${fistNow ? 'yes' : 'no '} ${(fistProgress * 100).toFixed(0)}%\n` +
-      `swipe  ${(swipe.peek() >= 0 ? '+' : '')}${swipe.peek().toFixed(2)} of frame (next fires at +${TUNE.swipeMinDx}; + is toward your left)\n` +
+      `swipe  ${(swipe.peek() >= 0 ? '+' : '')}${swipe.peek().toFixed(2)} of frame, hand ${openNow ? 'open' : 'not open'} (next fires at +${TUNE.swipeMinDx} within ${TUNE.swipeWindow} ms; + is toward your left)\n` +
       `last   ${ago}`;
   }
 
@@ -201,7 +206,7 @@ import { BASE } from '../lib/url';
     if (lm) {
       const W = innerWidth, H = innerHeight;
       const tip = lm[8]; lastHandAt = now;
-      fistNow = isFist(lm, TUNE.fistCurl);
+      fistNow = isFist(lm, TUNE.fistCurl); openNow = !fistNow && openHand(lm, 1.05, TUNE.openFingers);
       // mirrored, then the central `reach` slice of the frame stretched to the whole screen. Frozen while the hand is a fist
       // (the fingertip folds into the palm and would drag the cursor away).
       if (!fistNow) {
@@ -218,9 +223,12 @@ import { BASE } from '../lib/url';
 
       // swipe: the fingertip travelling sideways across the frame (raw x grows toward the viewer's left because the image is mirrored).
       // The fingertip, not the wrist: a wave from the wrist barely moves the wrist.
-      // Only a swipe toward the viewer's left counts (next); the hand coming back the other way is ignored, and a fist never swipes.
-      const dir = fistNow ? 0 : swipe.push(tip.x, tip.y, now);
-      if (dir > 0 && now - lastNav > TUNE.navGap) { lastNav = now; dwell.reset(); map().step(1); flash('next'); }
+      // Only an open-hand sweep toward the viewer's left counts (next); the hand coming back the other way is ignored, and a
+      // closed or half-closed hand never swipes. The legend chip fills as the sweep accumulates.
+      const palm = palmCentre(lm);
+      const dir = swipe.push(palm.x, palm.y, now, openNow);
+      nextChip.style.setProperty('--p', swipe.progress(1).toFixed(2));
+      if (dir > 0 && now - lastNav > TUNE.navGap) { lastNav = now; dwell.reset(); nextChip.style.setProperty('--p', '0'); map().step(1); flash('next'); }
 
       // hold: rest on a node or button to activate it; the ring on the cursor shows progress
       const t = speed > 900 || fistNow ? null : targetAt(cur.x, cur.y);   // a fast-moving hand, or a fist, is not holding
@@ -231,8 +239,8 @@ import { BASE } from '../lib/url';
     } else if (handSeen && now - lastHandAt > TUNE.handGrace) {
       // the hand has been gone for longer than a blink of lost tracking: hide the cursor and forget the gesture history
       handSeen = false; cursor.classList.remove('on'); cursor.style.setProperty('--p', '0');
-      fx.reset(); fy.reset(); swipe.reset(); dwell.reset(); fist.reset(); lastTargetKey = null; dwellProgress = 0; fistNow = false; fistProgress = 0;
-      cursor.classList.remove('fist');
+      fx.reset(); fy.reset(); swipe.reset(); dwell.reset(); fist.reset(); lastTargetKey = null; dwellProgress = 0; fistNow = false; fistProgress = 0; openNow = false;
+      cursor.classList.remove('fist'); nextChip.style.setProperty('--p', '0');
       map().pointer(-1e4, -1e4);
     }
 

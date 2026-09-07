@@ -1,7 +1,7 @@
 // Run with: node --experimental-strip-types --test tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OneEuro, Swipe, Dwell, isFist, Fist } from '../src/lib/gestures.ts';
+import { OneEuro, Swipe, Dwell, isFist, Fist, openHand, palmCentre } from '../src/lib/gestures.ts';
 
 test('OneEuro damps jitter when still and follows fast motion', () => {
   const f = new OneEuro(1.0, 0.02);
@@ -12,31 +12,41 @@ test('OneEuro damps jitter when still and follows fast motion', () => {
   assert.ok(out > 380, `should catch up quickly, got ${out}`);
 });
 
-test('Swipe fires on fast horizontal travel and ignores vertical or slow movement', () => {
-  const s = new Swipe({ windowMs: 450, minDx: 0.28, maxDyRatio: 0.6 });
+test('Swipe fires on an open-hand sweep, not on vertical, slow, or closed-hand movement', () => {
+  const s = new Swipe({ windowMs: 900, minDx: 0.18, maxDyRatio: 0.9, minSpeed: 0.3 });
   let dir = 0;
-  for (let i = 0; i <= 8; i++) dir = s.push(0.3 + i * 0.05, 0.5 + i * 0.005, i * 40) || dir;   // 0.40 in 320 ms, flat
+  for (let i = 0; i <= 12; i++) dir = s.push(0.4 + i * 0.02, 0.5 + i * 0.002, i * 40) || dir;    // 0.24 in 480 ms, flat, open
   assert.equal(dir, 1);
   dir = 0;
-  for (let i = 0; i <= 8; i++) dir = s.push(0.5, 0.2 + i * 0.05, 1000 + i * 40) || dir;        // vertical only
+  for (let i = 0; i <= 12; i++) dir = s.push(0.5, 0.2 + i * 0.03, 1000 + i * 40) || dir;          // vertical only
   assert.equal(dir, 0);
   dir = 0;
-  for (let i = 0; i <= 20; i++) dir = s.push(0.7 - i * 0.02, 0.5, 2000 + i * 100) || dir;      // 0.40 but over 2 s
+  for (let i = 0; i <= 30; i++) dir = s.push(0.7 - i * 0.008, 0.5, 2000 + i * 60) || dir;         // 0.24 but over 1.8 s: a drift, not a swipe
   assert.equal(dir, 0);
   dir = 0;
-  for (let i = 0; i <= 8; i++) dir = s.push(0.7 - i * 0.05, 0.5, 3000 + i * 40) || dir;        // leftward
+  for (let i = 0; i <= 12; i++) dir = s.push(0.7 - i * 0.02, 0.5, 4000 + i * 40, false) || dir;   // closed hand
+  assert.equal(dir, 0);
+  dir = 0;
+  for (let i = 0; i <= 12; i++) dir = s.push(0.7 - i * 0.02, 0.5, 5000 + i * 40) || dir;          // leftward, open
   assert.equal(dir, -1);
   s.reset();
-  for (let i = 0; i <= 3; i++) s.push(0.3 + i * 0.03, 0.5, 4000 + i * 40);
-  assert.ok(Math.abs(s.peek() - 0.09) < 1e-9);                                                  // peek reports travel so far
+  for (let i = 0; i <= 4; i++) s.push(0.3 + i * 0.02, 0.5, 6000 + i * 40);
+  assert.ok(Math.abs(s.progress(1) - 0.08 / 0.18) < 1e-9);                                        // progress toward the threshold
 });
 
-test('Swipe survives a short tracking dropout mid-swipe when the caller keeps its history', () => {
-  const s = new Swipe({ windowMs: 500, minDx: 0.22, maxDyRatio: 0.9 });
+test('Swipe survives a short tracking dropout mid-sweep when the caller keeps its history', () => {
+  const s = new Swipe({ windowMs: 900, minDx: 0.18, maxDyRatio: 0.9, minSpeed: 0.3 });
   let dir = 0;
-  for (let i = 0; i <= 3; i++) dir = s.push(0.3 + i * 0.04, 0.5, i * 33) || dir;
-  for (let i = 8; i <= 12; i++) dir = s.push(0.3 + i * 0.04, 0.52, i * 33) || dir;              // frames 4-7 missing
+  for (let i = 0; i <= 3; i++) dir = s.push(0.3 + i * 0.025, 0.5, i * 33) || dir;
+  for (let i = 8; i <= 12; i++) dir = s.push(0.3 + i * 0.025, 0.52, i * 33) || dir;                // frames 4-7 missing
   assert.equal(dir, 1);
+});
+
+test('openHand and palmCentre read a synthetic hand', () => {
+  const lm = hand(true); [5, 9, 13, 17].forEach((i, k) => { lm[i] = { x: 0.4 + k * 0.05, y: 0.25 }; });   // finger bases between wrist (origin) and the joints
+  assert.equal(openHand(lm), true);
+  assert.equal(openHand(hand(false)), false);
+  const c = palmCentre(lm); assert.ok(Math.abs(c.x - 0.38) < 1e-9 && Math.abs(c.y - 0.2) < 1e-9);
 });
 
 test('Dwell fires once after resting on a target, never on empty space, and re-arms after moving away', () => {

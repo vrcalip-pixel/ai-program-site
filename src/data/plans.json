@@ -1,0 +1,72 @@
+{
+  "_comment": "Sample plans for the counselor page (Courses and recommended sequence). DRAFT 2026-09-07, not yet confirmed by Vincent: every unit figure marked confirm:true is to be checked against the approved program requirements and the current LBCC-GE sheet before this ships. The AI courses come from the content collection; program.json holds the ladder and the supporting courses.",
+  "sources": [
+    { "id": "narrative", "text": "LBCC program narrative for the A.S. in Artificial Intelligence for Digital Transformation (Regional CTE listing): the six AI courses, CS 31 (3), COSP 38 (4) and COSN 250 (3), subtotal 28 units; then LBCC-GE, CSU GE Breadth or IGETC/Cal-GETC, plus electives as needed to reach 60 degree-applicable units.", "url": "https://regionalcte.org/browse/3aRG9" },
+    { "id": "lbccge", "text": "LBCC-GE 2025–2026 advising sheet: general education must total 25 units for the A.A. or 19 units for the A.S.", "url": "https://www.lbcc.edu/sites/main/files/file-attachments/2025-05-29_lbcc-ge_2025-2026-f.pdf" },
+    { "id": "title5", "text": "Title 5 §55063 (effective Fall 2025): local GE pattern of seven areas, 21 semester units minimum: English Composition; Oral Communication and Critical Thinking; Mathematical Concepts and Quantitative Reasoning; Arts and Humanities; Social and Behavioral Sciences; Natural Sciences; Ethnic Studies.", "url": "https://www.cccco.edu/-/media/CCCCO-Website/docs/memo/ESLEI-2407-Implementation-of-Revisions-to-Associate-Degree-Regulations.pdf" },
+    { "id": "catalog", "text": "LBCC online catalog (current requirements, course descriptions, GE course lists).", "url": "https://www.lbcc.edu/post/online-college-catalog" }
+  ],
+  "supporting": [
+    { "number": "CS 31", "title": "Introduction to Computer Science – Python", "units": 3, "confirm": true, "note": "The program narrative lists 3 units; the LBCC class schedule shows CS 31 at 4 units. Confirm which applies to the degree." },
+    { "number": "COSP 38", "title": "Database Concepts", "units": 4, "confirm": false },
+    { "number": "COSN 250", "title": "Cloud Computing in AWS", "units": 3, "confirm": false }
+  ],
+  "ge": {
+    "plan": "LBCC-GE",
+    "unitsMin": 21,
+    "unitsNote": "Seven areas, one course each, 3 units minimum per area (21 units). The 2025–26 LBCC-GE sheet states 19 units for an A.S.; confirm the current total with Counseling. CSU GE Breadth or Cal-GETC may be used instead for students planning to transfer.",
+    "confirm": true,
+    "areas": [
+      { "id": "1", "name": "English Composition", "units": 3, "example": "ENGL C1000 College Composition" },
+      { "id": "2", "name": "Oral Communication and Critical Thinking", "units": 3, "example": "COMM C1000 Introduction to Public Speaking" },
+      { "id": "3", "name": "Mathematical Concepts and Quantitative Reasoning", "units": 3, "example": "STAT C1000 Introduction to Statistics", "note": "Statistics pairs well with AI 40; also satisfies the mathematics proficiency." },
+      { "id": "4", "name": "Arts and Humanities", "units": 3, "example": "an introductory philosophy, art history or literature course" },
+      { "id": "5", "name": "Social and Behavioral Sciences", "units": 3, "example": "PSYC C1000 Introduction to Psychology" },
+      { "id": "6", "name": "Natural Sciences", "units": 3, "example": "an introductory biology, earth or physical science course" },
+      { "id": "7", "name": "Ethnic Studies", "units": 3, "example": "an introductory ethnic studies course" }
+    ]
+  },
+  "electives": {
+    "unitsToSixty": true,
+    "note": "Any degree-applicable LBCC courses bring the total to 60 units. Focus-area electives recommended by the program (for example web development or business process automation) are to be confirmed from the approved program documents.",
+    "confirm": true,
+    "focus": []
+  },
+  "degreePlan": {
+    "title": "Full-time, four semesters",
+    "note": "About 15 units a term. At half that load the same plan takes eight semesters; the order stays the same. AI courses go in the recommended order, the supporting courses sit beside the AI course they help most, and one general-education course each term keeps the load balanced.",
+    "semesters": [
+      { "name": "Semester 1", "items": [
+        { "kind": "ai", "id": "ai-40" },
+        { "kind": "ai", "id": "ai-45" },
+        { "kind": "support", "number": "CS 31" },
+        { "kind": "ge", "area": "1" },
+        { "kind": "ge", "area": "7" }
+      ], "milestone": "AI Literacy (Certificate of Accomplishment, 6 units) earned" },
+      { "name": "Semester 2", "items": [
+        { "kind": "ai", "id": "ai-60" },
+        { "kind": "ai", "id": "ai-65" },
+        { "kind": "support", "number": "COSP 38" },
+        { "kind": "ge", "area": "2" },
+        { "kind": "ge", "area": "3" }
+      ], "milestone": "AI Fluency (Certificate of Achievement, 12 units) earned" },
+      { "name": "Semester 3", "items": [
+        { "kind": "ai", "id": "ai-70" },
+        { "kind": "support", "number": "COSN 250" },
+        { "kind": "ge", "area": "5" },
+        { "kind": "ge", "area": "6" },
+        { "kind": "elective", "units": 3, "label": "Elective" }
+      ] },
+      { "name": "Semester 4", "items": [
+        { "kind": "ai", "id": "ai-80" },
+        { "kind": "ge", "area": "4" },
+        { "kind": "elective", "units": 8, "label": "Electives (two or three courses)" }
+      ], "milestone": "AI for Digital Transformation (Certificate of Achievement, 18 units) and the A.S. degree earned" }
+    ]
+  },
+  "certificatePlans": [
+    { "id": "literacy", "terms": [ { "name": "One semester", "ids": ["ai-40", "ai-45"] } ], "note": "Both courses can be taken in the same term; neither has a prerequisite." },
+    { "id": "fluency", "terms": [ { "name": "Semester 1", "ids": ["ai-40", "ai-45"] }, { "name": "Semester 2", "ids": ["ai-60", "ai-65"] } ], "note": "AI 60 and AI 65 may be taken in either order, or together." },
+    { "id": "certificate-18", "terms": [ { "name": "Semester 1", "ids": ["ai-40", "ai-45"] }, { "name": "Semester 2", "ids": ["ai-60", "ai-65"] }, { "name": "Semester 3", "ids": ["ai-70"] }, { "name": "Semester 4", "ids": ["ai-80"] } ], "note": "AI 80 (the capstone) recommends AI 70 first. A student in a hurry can take AI 70 and AI 80 in the same term, since recommended preparation is advisory, and finish in three semesters." }
+  ]
+}

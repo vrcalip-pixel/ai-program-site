@@ -587,6 +587,49 @@ body.handsfree .hud h1,body.handsfree .hud p{opacity:0;transform:translateY(12px
 @media (prefers-reduced-motion:reduce){.lab-fill,.lab-meter i,.lab-segs i,.lab-path,.lab-point{transition:none}}
 @media print{.lab-tabs{display:none}.lab-view{display:block!important;opacity:1;transform:none;margin-bottom:18pt;break-inside:avoid}.lab-view[hidden]{display:block!important}.lab-chart,.lab-meters,.lab-tiles li,.lab-latest,.lab-refs{background:#f3f5f7;border-color:#ccc;break-inside:avoid}.lab-tip,.lab-toggle{display:none!important}.lab-fill,.lab-segs i,.lab-legend i{opacity:.7;background:#888}.lab-row.emph .lab-fill,.lab-segs i.emph,.lab-legend i.emph,.lab-meter i,.lab-point i{background:var(--brass);opacity:1}.lab-fill,.lab-meter i,.lab-segs i{width:var(--w,auto)}.lab-grid{background:#ddd}.lab-hline{stroke:#ddd}.lab-refs ol{font-size:10pt}.lab-refs summary::before{display:none}}
 
+/* fold-out panels (counselor page plans): same look as the labor references */
+.folds{display:grid;gap:12px;min-width:0}
+.folds>*{min-width:0}
+.fold{border:1px solid rgba(238,242,245,.1);border-radius:16px;background:var(--plum-2);min-width:0}
+.fold summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;padding:16px 20px;cursor:pointer;list-style:none;font-weight:600;font-size:16px}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--brass);border-bottom:2px solid var(--brass);transform:rotate(-45deg);margin-right:4px;transition:transform .2s;flex:none;align-self:center}
+.fold[open] summary::before{transform:rotate(45deg)}
+.fold summary small{font-weight:500;font-size:13px;color:var(--ink-2)}
+.fold summary:hover{color:var(--brass)}
+.fold-body{padding:0 20px 20px}
+.fold-body .tablewrap{border-radius:12px;background:rgba(11,22,34,.35)}
+.fold-note{color:var(--ink-2);font-size:14.5px;line-height:1.55;max-width:70ch;margin:0 0 14px}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.plan-grid.sem{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.plan-card{padding:16px 18px;border-radius:12px;border:1px solid rgba(238,242,245,.1);background:rgba(11,22,34,.35);display:flex;flex-direction:column;gap:10px}
+.plan-card header h3{font-size:17px;margin:0}
+.plan-card header h3 a{text-decoration:none}
+.plan-card header h3 a:hover{text-decoration:underline}
+.plan-card .kind{display:block;font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.plan-card p{font-size:13.5px;color:var(--ink-2);line-height:1.5;margin:0}
+.terms{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:14.5px}
+.terms li{display:flex;gap:10px;align-items:baseline}
+.terms b{color:var(--ink-2);font-weight:600;min-width:9ch;font-size:13px}
+.terms a{text-decoration:none;color:var(--sun);font-weight:600}
+.terms a:hover{text-decoration:underline}
+.plan-rows{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:14px}
+.plan-rows li{display:grid;grid-template-columns:10px auto 1fr auto;gap:0 10px;align-items:baseline}
+.plan-rows li i,.plan-key i{width:10px;height:10px;border-radius:50%;background:var(--ink-2);display:inline-block;flex:none;transform:translateY(1px)}
+.plan-rows li.ai i,.plan-key i.ai{background:var(--brass)}
+.plan-rows li.support i,.plan-key i.support{background:var(--glacier)}
+.plan-rows li.ge i,.plan-key i.ge{background:var(--ink-2)}
+.plan-rows li.elective i,.plan-key i.elective{background:transparent;border:1.5px solid var(--ink-2)}
+.plan-rows b{font-weight:600;white-space:nowrap}
+.plan-rows b a{color:var(--sun);text-decoration:none}.plan-rows b a:hover{text-decoration:underline}
+.plan-rows span{color:var(--ink-2);font-size:13.5px}
+.plan-rows em{font-style:normal;color:var(--ink-2);font-size:13px}
+.plan-card .milestone{margin-top:auto;padding-top:10px;border-top:1px solid rgba(238,242,245,.08);color:var(--brass);font-size:13px}
+.plan-key{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink-2)}
+.plan-key li{display:flex;align-items:center;gap:7px}
+@media (max-width:560px){.fold summary{padding:14px 16px}.fold-body{padding:0 12px 16px}}
+@media print{.fold{background:#f3f5f7;border-color:#ccc;break-inside:avoid}.plan-card,.fold-body .tablewrap{background:#fff;border-color:#ccc}.fold summary::before{display:none}}
+
 /* people (about page): one card per person; photo beside the bio on wide screens, above it on phones */
 .people,.person{scroll-margin-top:calc(var(--navh) + 20px)}
 .persons{list-style:none;display:grid;gap:20px;margin-top:8px}

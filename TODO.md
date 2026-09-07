@@ -8,8 +8,8 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 2. **6-unit Certificate of Accomplishment** — status updated per Vincent, 2026-09-05: "In development", expected to be offered no later than Spring 2027 (BRIEF §2 said "Approved"; the site now follows Vincent). Still open: whether it is transcripted — `src/pages/pathway.astro` (`transcripted()`) shows "To be confirmed".
 
-3. **Approved degree requirements beyond the six AI courses** — `src/data/program.json` (`supportingCourses`), `src/pages/pathway.astro`, `src/pages/counselors.astro`
-   Only COSP 38, CS 31 and COSN 250 (CORs on file) plus "general education (15 units)" are listed, with a note that these are the courses with outlines on file.
+3. **Approved degree requirements beyond the six AI courses** — `src/data/plans.json`, `src/components/Plans.astro`, `src/pages/pathway.astro`, `src/pages/counselors.astro`
+   The counselor page now shows the 28-unit core (six AI courses + CS 31, COSP 38, COSN 250, per the program narrative on Regional CTE), a sample four-semester degree plan, and the GE areas. To confirm: CS 31 units (narrative says 3; the class schedule says 4), the LBCC-GE total for an A.S. (the 2025–26 sheet says 19; Title 5 sets 21 minimum), and the program's recommended focus-area electives (web development, business processes) from the approved program documents. Each unverified figure is flagged `confirm` in plans.json; clearing the flags removes the "Draft for review" line.
 
 4. **Recommended preparation for AI 70** — done. AI 60, per its COR (Vincent, 2026-09-05).
 

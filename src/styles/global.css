@@ -65,8 +65,9 @@ body.page .nav{background:linear-gradient(to bottom,rgba(11,22,34,.94),rgba(11,2
 .chip.hot{background:var(--coral);border-color:var(--coral);color:#1A1206}
 .ghost{padding:10px 16px;border-radius:999px;border:1px solid rgba(238,242,245,.25);background:rgba(11,22,34,.55);backdrop-filter:blur(10px);font-weight:600;font-size:14px;text-decoration:none;color:var(--ink);display:inline-block;line-height:1.3}
 .ghost:hover{background:rgba(238,242,245,.1)}
-.see{display:inline-block;padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--plum);font-weight:600;font-size:14px;text-decoration:none;line-height:1.3}
-.see:hover{background:#fff}
+/* primary pill: brass with dark ink (the white pill read as too loud against the midnight ground) */
+.see{display:inline-block;padding:10px 16px;border-radius:999px;background:var(--brass);color:#1A1206;font-weight:600;font-size:14px;text-decoration:none;line-height:1.3;transition:filter .2s}
+.see:hover{filter:brightness(1.08)}
 .sound{display:inline-flex;align-items:center}
 .sound[aria-pressed="true"]{background:rgba(238,242,245,.14);border-color:rgba(238,242,245,.4)}
 @keyframes rise{to{opacity:1;transform:none}}
@@ -180,10 +181,14 @@ aside .path a b{color:var(--sun)}
 .prose a,a.u{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(238,242,245,.35);text-underline-offset:3px}
 .prose a:hover,a.u:hover{text-decoration-color:var(--brass)}
 /* pill links keep their own colours wherever they sit (the .prose link rule above would otherwise win and give white on white) */
-.prose a.see,a.see,.see{color:var(--plum);text-decoration:none}
-.prose a.see:hover,a.see:hover{color:var(--plum);background:#fff}
+.prose a.see,a.see,.see{color:#1A1206;text-decoration:none}
+.prose a.see:hover,a.see:hover{color:#1A1206;filter:brightness(1.08)}
 .prose a.ghost,a.ghost{color:var(--ink);text-decoration:none}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+/* side-by-side calls to action: columns stretch and the pill sits on a shared baseline */
+.two.cta{align-items:stretch}
+.two.cta .prose{display:flex;flex-direction:column}
+.two.cta .prose p:has(> .see){margin-top:auto;padding-top:8px}
 @media (max-width:820px){.two{grid-template-columns:1fr}}
 .cards{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .cards li{padding:22px;border-radius:16px;background:var(--plum-2);border:1px solid rgba(238,242,245,.1)}

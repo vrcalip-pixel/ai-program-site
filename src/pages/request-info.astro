@@ -6,7 +6,7 @@ import { breadcrumbs } from '../lib/schema';
 
 // One form for every stakeholder. The "I am a" choice swaps in the fields that role needs.
 // Submissions post to the Apps Script in scripts/apps-script/Code.gs (see FORM-SETUP.md), which
-// appends a row to a Google Sheet and emails the program lead. If the endpoint is not set or
+// appends a row to a Google Sheet and emails the program director. If the endpoint is not set or
 // unreachable, the form falls back to opening a prefilled email.
 // Preselect with ?role=student|counselor|employer|other and, for employers, &topic=advisory|project|internship|hiring|other
 const { endpoint, token } = program.form;
@@ -98,7 +98,7 @@ const { endpoint, token } = program.form;
 
         <div class="done" id="rdone" hidden>
           <h2>Sent. Thank you.</h2>
-          <p style="color:var(--ink-2);max-width:48ch">Your message is on its way to the program lead. Expect a reply by email, usually within a few working days.</p>
+          <p style="color:var(--ink-2);max-width:48ch">Your message is on its way to the program director. Expect a reply by email, usually within a few working days.</p>
           <p style="margin-top:18px"><a class="ghost" href={url('/')}>Back to the map</a></p>
         </div>
 

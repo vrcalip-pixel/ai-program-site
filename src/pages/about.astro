@@ -41,7 +41,7 @@ const personLd = people.people.map(p => ({ '@context': 'https://schema.org', '@t
           <dl class="facts-dl">
             <dt>Degree</dt><dd>{program.degree}</dd>
             <dt>Approved</dt><dd>{program.approval.body}, {program.approval.date}</dd>
-            <dt>Faculty author</dt><dd><a href="#people" class="u">{program.facultyAuthor}</a>, {program.facultyRole.toLowerCase()}</dd>
+            <dt>Author and director</dt><dd><a href="#people" class="u">{program.facultyAuthor}</a></dd>
             <dt>Department</dt><dd>{program.department}</dd>
             <dt>Department Head</dt><dd>{program.departmentHead}</dd>
             <dt>School Dean</dt><dd>{program.schoolDean}</dd>
@@ -81,7 +81,7 @@ const personLd = people.people.map(p => ({ '@context': 'https://schema.org', '@t
       <div class="wrap two">
         <div class="prose">
           <h2>Contact</h2>
-          <p>Questions about the program, enrollment, or partnerships go to the program lead.</p>
+          <p>Questions about the program, enrollment, or partnerships go to the program director.</p>
           <p><a class="see" href={url('/request-info')}>Request info</a></p>
           <p style="font-size:15px">Or email <a href={`mailto:${program.contactEmail}`}>{program.contactEmail}</a>.</p>
         </div>

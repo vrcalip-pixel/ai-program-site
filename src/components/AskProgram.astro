@@ -101,8 +101,8 @@ const data = { roles: faq.roles, entries: entries.map(({ _todo, ...rest }: any) 
         (results.length > 1 ? `<div class="related"><span>Related</span>${results.slice(1).map(r => `<button type="button" data-id="${r.e.id}">${esc(r.e.q)}</button>`).join('')}</div>` : '');
       d.querySelectorAll<HTMLButtonElement>('.related button').forEach(b => b.addEventListener('click', () => { const e = DATA.entries.find(x => x.id === b.dataset.id); if (e) { addQ(e.q); addA([{ e, s: 99, cover: 1 }]); } }));
     } else {
-      lastAnswer = "I don't have that one yet. Send it to the program lead and you'll get a reply by email.";
-      d.innerHTML = `<p>${esc(lastAnswer)}</p><a class="see sm" href="${requestInfo}?role=${encodeURIComponent(role)}&q=${encodeURIComponent(asked)}">Ask the program lead ›</a>`;
+      lastAnswer = "I don't have that one yet. Send it to the program director and you'll get a reply by email.";
+      d.innerHTML = `<p>${esc(lastAnswer)}</p><a class="see sm" href="${requestInfo}?role=${encodeURIComponent(role)}&q=${encodeURIComponent(asked)}">Ask the program director ›</a>`;
     }
     log.appendChild(d); log.scrollTop = log.scrollHeight;
     if (speakOn) speak(lastAnswer);

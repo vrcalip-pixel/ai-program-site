@@ -150,6 +150,8 @@ function draw(now:number){
   // travelling light along the pathway (interpolated in 3D)
   {const T=(now/1000)%PATH.length,i=Math.floor(T),f=T-i;if(i<PATH.length-1){const A=byId[PATH[i]],B=byId[PATH[i+1]],p=proj(A.x+(B.x-A.x)*f,A.y+(B.y-A.y)*f,A.z+(B.z-A.z)*f);
     if(p){sx.fillStyle='#F1D9A6';sx.globalAlpha=.9*Math.min(1,p.s*2);sx.shadowColor='#D4A054';sx.shadowBlur=16;sx.beginPath();sx.arc(p.x,p.y,2.5*Math.max(.5,p.s*1.5),0,6.283);sx.fill();sx.shadowBlur=0}}}
+  // the open panel is frosted glass: nothing sharp (labels) is drawn beneath it, so its text never sits over other text
+  const pr=active?panel.getBoundingClientRect():null;const underPanel=(x:number,y:number)=>!!pr&&x>pr.left-24&&x<pr.right+24&&y>pr.top-24&&y<pr.bottom+24;
   // nodes, far to near
   hover=null;const order=[...NODES].sort((a,b)=>b.z-a.z);
   for(const n of order){const p=P[n.id];if(!p)continue;
@@ -167,10 +169,10 @@ function draw(now:number){
       if(reveal>.02)n.sats.forEach((st:any,k:number)=>{const ang=now/9000+k*(6.283/n.sats.length),orb=(58+n.sats.length*5+k*6)*p.s*1.4*(0.6+.4*reveal),qx=p.x+Math.cos(ang)*orb,qy=p.y+Math.sin(ang)*orb*.55;
         sx.strokeStyle='#6FA8BF';sx.globalAlpha=.16*reveal*vis;sx.lineWidth=.8;sx.beginPath();sx.moveTo(p.x,p.y);sx.lineTo(qx,qy);sx.stroke();
         sx.fillStyle='#9FB0BE';sx.globalAlpha=.85*reveal*vis;sx.beginPath();sx.arc(qx,qy,3*Math.max(.5,p.s*1.3),0,6.283);sx.fill();
-        if(isA){sx.globalAlpha=.85;sx.fillStyle='#EEF2F5';sx.font=`500 ${Math.max(10,Math.min(16,11*p.s*1.7)).toFixed(1)}px "IBM Plex Sans"`;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=6;sx.fillText(st.n,qx+7,qy+4);sx.shadowBlur=0}})}
+        if(isA&&!underPanel(qx,qy)){sx.globalAlpha=.85;sx.fillStyle='#EEF2F5';sx.font=`500 ${Math.max(10,Math.min(16,11*p.s*1.7)).toFixed(1)}px "IBM Plex Sans"`;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=6;sx.fillText(st.n,qx+7,qy+4);sx.shadowBlur=0}})}
     // labels appear as things approach
     // labels scale with distance: large up front, small in the background, growing as the camera approaches
-    const show=(p.s>.26||isH||isA)&&vis>.25&&p.x>0&&p.x<SW;                           // no label for a node whose dot is off the canvas (it would read as a clipped fragment)
+    const show=(p.s>.26||isH||isA)&&vis>.25&&p.x>0&&p.x<SW&&!underPanel(p.x,p.y);                           // no label for a node whose dot is off the canvas (it would read as a clipped fragment)
     if(show){const la=Math.min(1,(p.s-.2)*3.5)*vis;sx.shadowColor='rgba(4,9,15,.9)';sx.shadowBlur=8;sx.shadowOffsetY=1;const fs=Math.max(9,Math.min(30,34*Math.pow(p.s,1.15))),fs2=Math.max(9,fs*.85);
       sx.globalAlpha=(isH||isA?1:.9)*la;sx.font=`600 ${fs.toFixed(1)}px "IBM Plex Sans"`;sx.fillStyle='#EEF2F5';sx.fillText(n.n.split(' · ')[0],p.x+r+10,p.y-2);
       sx.globalAlpha=.8*la;sx.font=`500 ${fs2.toFixed(1)}px "IBM Plex Serif"`;sx.fillStyle='#B8C6D1';sx.fillText(n.short||n.t,p.x+r+10,p.y+fs2*1.15);sx.shadowBlur=0;sx.shadowOffsetY=0}

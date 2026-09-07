@@ -258,22 +258,30 @@ body.ambient #vignette{opacity:1}
 @media (max-width:820px){#map.focused .hud{opacity:0;pointer-events:none}.panel-node .back{display:inline-block}}
 .legend{position:absolute;right:4vw;bottom:34px;z-index:3;display:grid;gap:8px;font-size:13px;color:var(--ink-2)}
 .legend span{display:flex;align-items:center;gap:8px}.legend i{width:10px;height:10px;border-radius:50%}
+/* the node panel is frosted glass (BRIEF §4): a translucent dark tint over a heavy blur, a hairline, a gloss along the top-left.
+   The tint floor (~.5) is what keeps ink and secondary-ink text above 7:1 whatever drifts behind it. */
 .panel-node{position:absolute;top:50%;right:4vw;transform:translateY(-50%) translateX(20px);width:min(420px,88vw);z-index:4;
-  background:rgba(19,36,52,.88);backdrop-filter:blur(18px);border:1px solid rgba(238,242,245,.14);border-radius:24px;padding:28px;
+  background:linear-gradient(160deg,rgba(19,36,52,.62),rgba(11,22,34,.48));backdrop-filter:blur(24px) saturate(1.35);-webkit-backdrop-filter:blur(24px) saturate(1.35);
+  border:1px solid rgba(238,242,245,.16);border-radius:28px;padding:28px;isolation:isolate;
   opacity:0;pointer-events:none;transition:opacity .35s,transform .5s cubic-bezier(.2,.8,.2,1)}
+.panel-node::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:linear-gradient(135deg,rgba(255,255,255,.11) 0%,rgba(255,255,255,.035) 30%,transparent 58%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.03)}
+@supports not (backdrop-filter:blur(1px)){.panel-node{background:rgba(19,36,52,.92)}}
+@media (prefers-reduced-transparency:reduce){.panel-node{background:rgba(19,36,52,.94);backdrop-filter:none;-webkit-backdrop-filter:none}}
 .panel-node.open{opacity:1;pointer-events:auto;transform:translateY(-50%) translate(var(--wx,0px),var(--wy,0px))}
 .panel-node .kind{font-size:13px;color:var(--brass);font-weight:600}
 /* the panel takes the colour of the node it describes, matching the legend */
-.panel-node[data-kind="course"]{border-color:rgba(212,160,84,.55);box-shadow:0 0 0 1px rgba(212,160,84,.12),0 24px 60px rgba(2,5,9,.35)}
-.panel-node[data-kind="credential"]{border-color:rgba(111,168,191,.6);box-shadow:0 0 0 1px rgba(111,168,191,.14),0 24px 60px rgba(2,5,9,.35)}
+.panel-node[data-kind="course"]{border-color:rgba(212,160,84,.55);box-shadow:0 0 0 1px rgba(212,160,84,.12),0 28px 70px rgba(2,5,9,.5)}
+.panel-node[data-kind="credential"]{border-color:rgba(111,168,191,.6);box-shadow:0 0 0 1px rgba(111,168,191,.14),0 28px 70px rgba(2,5,9,.5)}
 .panel-node[data-kind="credential"] .kind{color:var(--glacier)}
-.panel-node[data-kind="page"]{border-color:rgba(159,176,190,.55);box-shadow:0 0 0 1px rgba(159,176,190,.12),0 24px 60px rgba(2,5,9,.35)}
+.panel-node[data-kind="page"]{border-color:rgba(159,176,190,.55);box-shadow:0 0 0 1px rgba(159,176,190,.12),0 28px 70px rgba(2,5,9,.5)}
 .panel-node[data-kind="page"] .kind{color:var(--ink-2)}
 .panel-node h2{font-size:30px;margin-top:6px}
 .panel-node p{color:var(--ink-2);font-size:15px;margin-top:12px}
 .panel-node .acts{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;align-items:center}
 .panel-node .sm{padding:8px 13px;font-size:13.5px}
-.panel-node .ghost.sm{background:rgba(238,242,245,.06)}
+.panel-node .ghost.sm{background:rgba(238,242,245,.08);backdrop-filter:none}
 .panel-node button:disabled{opacity:.35;cursor:default}
 .panel-node .close{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(238,242,245,.2);font-size:16px}
 .destinations{display:none}
@@ -323,7 +331,7 @@ body.map .ask{bottom:190px}
   body.map .ask-pill{bottom:24px;right:4vw;width:44px;height:44px;padding:0;justify-content:center;border-radius:50%}
   body.map .ask-pill span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   body.map .ask-pill svg{width:20px;height:20px}
-  body.map #map.focused ~ .ask-pill{opacity:0;pointer-events:none}
+  body.map:has(#map.focused) .ask-pill{opacity:0;pointer-events:none}
   .ask,body.map .ask{right:0;left:0;bottom:0;width:auto;max-height:82vh;border-radius:24px 24px 0 0;background:rgba(19,36,52,.97)}
   .ask header{padding-top:18px}
 }
@@ -347,7 +355,7 @@ body.handsfree .hud h1,body.handsfree .hud p{opacity:0;transform:translateY(12px
 .hf-legend b{font-weight:600;color:var(--ink)}
 .hf-legend span{color:var(--ink-2)}
 .hf-legend li.hit,.hf-legend li.hit b,.hf-legend li.hit span,.hf-legend li.hit svg{color:var(--brass)}
-@media (max-width:820px){.hf-legend{bottom:86px}#map.focused ~ .hf-legend.show{opacity:0}}
+@media (max-width:820px){.hf-legend{bottom:86px}body:has(#map.focused) .hf-legend.show{opacity:0}}
 .hf-cursor{position:fixed;left:0;top:0;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:2px solid var(--brass);background:rgba(212,160,84,.12);box-shadow:0 0 0 4px rgba(212,160,84,.16),0 0 22px rgba(212,160,84,.55);pointer-events:none;z-index:60;opacity:0;transition:opacity .2s;will-change:transform;--p:0}
 .hf-cursor.on{opacity:1}
 .hf-cursor.fist{background:rgba(212,160,84,.55);transform-origin:center}

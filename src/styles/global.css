@@ -124,9 +124,14 @@ footer.site a:hover{color:var(--ink)}
 .chero{position:relative;min-height:78svh;display:grid;align-items:end;padding:calc(var(--navh) + 80px) 0 70px;isolation:isolate}
 .chero .video{position:absolute;inset:0;z-index:-1;overflow:hidden;
   background:linear-gradient(120deg,#0F2233,#1E4A5F 45%,#6FA8BF 100%);background-size:220% 220%;animation:drift 14s ease-in-out infinite alternate}
+/* hero video: cover the hero, tinted toward the site's midnight so any clip sits in the palette, and dissolved into the page
+   background across the lower half so the seam with the content below never shows as the visitor scrolls */
 .chero .video video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.chero .video::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--plum) 0%,rgba(11,22,34,.35) 45%,transparent 80%)}
-.chero .video .tag{position:absolute;top:calc(var(--navh) + 22px);right:4vw;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:999px;background:rgba(11,22,34,.6);backdrop-filter:blur(8px);z-index:1}
+.chero .video::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(11,22,34,.22);mix-blend-mode:multiply}
+.chero .video::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(to top,var(--plum) 0%,var(--plum) 6%,rgba(11,22,34,.92) 18%,rgba(11,22,34,.55) 38%,rgba(11,22,34,.2) 60%,transparent 82%),
+             linear-gradient(to bottom,rgba(11,22,34,.96) 0%,rgba(11,22,34,.7) var(--navh),rgba(11,22,34,.25) calc(var(--navh) + 110px),transparent calc(var(--navh) + 240px))}
+.chero .video .tag{position:absolute;top:calc(var(--navh) + 22px);right:4vw;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:999px;background:rgba(11,22,34,.6);backdrop-filter:blur(8px);z-index:2}
 @keyframes drift{to{background-position:100% 100%}}
 .chero .num{font-weight:600;color:var(--sun);font-size:16px}
 .chero h1{font-size:clamp(38px,6.2vw,88px);max-width:14ch;margin-top:10px}

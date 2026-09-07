@@ -32,7 +32,7 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 ## Assets
 
-11. **Hero videos (six)** — drop into `public/video/` as `ai-40.mp4`, `ai-40.webm`, `ai-40.jpg` (poster), etc., then set `video: true` in each course's frontmatter. Prompts are in BRIEF §9. Until then the hero shows the animated gradient with a "Hero video coming soon" tag.
+11. **Hero videos (six)** — AI 40 done 2026-09-07 (Vincent's clip, encoded to a 4.5 s crossfaded loop, MP4 + WebM + poster, ~0.8 MB each). Five to go: drop each into `public/video/` as `ai-nn.mp4`, `ai-nn.webm`, `ai-nn.jpg` (poster), then set `video: true` in that course's frontmatter. Hand a session the source clip and it will encode and loop it the same way. Prompts are in BRIEF §9. Until then those heroes show the animated gradient with a "Hero video coming soon" tag.
 
 12. **Student work showcase** — `src/pages/courses/[slug].astro` ships the section hidden (`data-showcase="empty"`). Remove the attribute when there is work to show.
 

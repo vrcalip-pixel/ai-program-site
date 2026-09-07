@@ -24,10 +24,14 @@ const pathwayHref = url(`/pathway#${d.countsToward.id}`);
     <header class="chero">
       <div class="video" aria-hidden="true">
         {d.video ? (
-          <video autoplay muted loop playsinline preload="metadata" poster={url(`/video/${slug}.jpg`)}>
+          <video autoplay muted loop playsinline preload="metadata" poster={url(`/video/${slug}.jpg`)} width="1280" height="720">
             <source src={url(`/video/${slug}.webm`)} type="video/webm" />
             <source src={url(`/video/${slug}.mp4`)} type="video/mp4" />
           </video>
+          <script is:inline>
+            // reduced motion: hold the poster frame instead of playing the loop (BRIEF §8)
+            if (matchMedia('(prefers-reduced-motion: reduce)').matches) { const v = document.currentScript.previousElementSibling; v.removeAttribute('autoplay'); v.pause(); }
+          </script>
         ) : (
           <span class="tag">Hero video coming soon</span>
         )}

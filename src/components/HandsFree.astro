@@ -1,80 +1,65 @@
 ---
 /**
  * Hands-free control for the landing map (BRIEF §10), part of the Experience toggle.
- * Stack: MediaPipe Tasks Vision (Hand Landmarker + Face Landmarker), WASM/GPU, entirely in the browser.
- * The runtime is bundled from the npm package and its WASM is served from this site (public/mediapipe/wasm,
- * copied by scripts/copy-mediapipe.mjs). The two model files are fetched from Google's model bucket the first
- * time Experience is turned on and cached by the browser. No frames are ever recorded, uploaded or stored.
- * Starts when DepthMap.astro dispatches `aidt:experience` with on=true; stops when it dispatches on=false.
- * If the camera is declined or missing, Experience keeps its sound and visuals and a one-line notice explains.
+ * Stack: MediaPipe Tasks Vision Hand Landmarker, WASM/GPU, entirely in the browser. The runtime is bundled from the
+ * npm package and its WASM is served from this site (public/mediapipe/wasm, copied by scripts/copy-mediapipe.mjs).
+ * The model file is fetched from Google's model bucket the first time Experience is turned on and cached by the
+ * browser. No frames are ever recorded, uploaded or stored. Starts when DepthMap.astro dispatches `aidt:experience`
+ * with on=true; stops when it dispatches on=false. If the camera is declined or missing, Experience keeps its sound
+ * and visuals and a one-line notice explains.
  *
- * Gestures (interpretation on top of landmarks):
- *   hand visible ........... fingertip cursor (index finger); nodes highlight under it
- *   pinch (thumb + index) .. click: fly to the node under the cursor, press a panel button, or send a wave
- *   open palm push / pull .. Deeper / Back
- *   two-finger swipe ....... left = Deeper, right = Back
- *   head turn .............. parallax tilt (replaces the cursor tilt)
- *   nod / shake ............ Deeper / close the panel
- * Eye tracking is deliberately left out (jittery, needs calibration).
+ * Four gestures (simplified 2026-09-07 after real use; the earlier pinch, palm push/pull, head turn, nod and shake
+ * were hard to perform reliably):
+ *   point .......... the index fingertip drives a cursor; nodes and buttons highlight under it
+ *   hold ........... rest the cursor on a node or button for about 1.5 s; a ring fills, then it activates
+ *   swipe left ..... next (Deeper), as if scrolling on
+ *   swipe right .... back
+ * Steadiness: a One Euro filter on the fingertip, a central slice of the camera frame mapped to the whole screen
+ * (less arm travel), and the cursor eased every animation frame between camera frames. Only one model runs, so the
+ * loop tracks at the camera's frame rate. The interpretation lives in src/lib/gestures.ts (unit tests in tests/).
  *
- * Tuning from real use: every threshold lives in TUNE below. Open the map with ?hf=debug to see the live
- * signals (frame rate, pinch ratio, palm size, head yaw and pitch, the last gesture) in a small overlay;
- * ?hf=nodebug hides it again. To try other values without a rebuild, set localStorage "hf.tune" to a JSON
- * object with the keys to override, e.g. {"pinchOn":0.35}, and turn Experience off and on.
+ * Tuning from real use: every threshold is in TUNE below. Open the map with ?hf=debug for a live overlay (frame rate,
+ * cursor speed, dwell progress, last gesture); ?hf=nodebug hides it. To try values without a rebuild, set
+ * localStorage "hf.tune" to a JSON object with the keys to override, e.g. {"dwellMs":1200}, and turn Experience off
+ * and on.
  */
 import { BASE } from '../lib/url';
 ---
 <video class="hf-cam" id="hfcam" playsinline muted autoplay aria-hidden="true"></video>
-<div class="hf-cursor" id="hfcursor" aria-hidden="true"></div>
+<div class="hf-cursor" id="hfcursor" aria-hidden="true"><i class="ring"></i></div>
 <div class="hf-notice" id="hfnotice" role="alert" hidden data-base={BASE}></div>
 <pre class="hf-debug" id="hfdebug" hidden aria-hidden="true"></pre>
 <div class="hf-legend" id="hflegend" hidden aria-label="Hands-free gestures">
   <div class="cam">Camera on · video stays on this device</div>
   <ul>
     <li data-g="point"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 11V9.5a1.5 1.5 0 0 1 3 0V13"/><path d="M15 12.5a1.5 1.5 0 0 1 3 0V15"/><path d="M9 12l-1.6-1.6a1.6 1.6 0 0 0-2.6 1.3c.2 3.3 1.3 5.8 3.7 7.8 1 .9 2.3 1.5 3.7 1.5H14a4 4 0 0 0 4-4v-2"/></svg><b>Point</b><span>cursor</span></li>
-    <li data-g="pinch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21c0-5.5 2.4-9.5 6-11"/><path d="M18 21c0-5.5-2.4-9.5-6-11"/><path d="M12 10V8"/><path d="M8.5 5.5 7.3 4.3"/><path d="M15.5 5.5l1.2-1.2"/></svg><b>Pinch</b><span>travel · press</span></li>
-    <li data-g="push"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13c0-1.5.8-2.5 2-2.5h1V6.5a1 1 0 0 1 2 0V10h1V5.5a1 1 0 0 1 2 0V10h1V7a1 1 0 0 1 2 0v6c0 3-2 6-5 6H9.5C6.3 19 4 16.3 4 13z"/><path d="M17.5 9.5 21 13l-3.5 3.5"/></svg><b>Push palm</b><span>deeper</span></li>
-    <li data-g="pull"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0-1.5-.8-2.5-2-2.5h-1V6.5a1 1 0 0 0-2 0V10h-1V5.5a1 1 0 0 0-2 0V10h-1V7a1 1 0 0 0-2 0v6c0 3 2 6 5 6h.5c3.2 0 5.5-2.7 5.5-6z"/><path d="M6.5 9.5 3 13l3.5 3.5"/></svg><b>Pull palm</b><span>back</span></li>
-    <li data-g="turn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="11" r="5.5"/><path d="M10 10.5h.01M14 10.5h.01"/><path d="M3 11h3M18 11h3"/><path d="M4.5 9.5 3 11l1.5 1.5M19.5 9.5 21 11l-1.5 1.5"/></svg><b>Turn head</b><span>tilt</span></li>
-    <li data-g="nod"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5"/><path d="M10 11.5h.01M14 11.5h.01"/><path d="M12 2.5v3M12 18.5v3"/><path d="M10.5 4 12 5.5 13.5 4M10.5 20 12 18.5 13.5 20"/></svg><b>Nod</b><span>deeper</span></li>
-    <li data-g="shake"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5"/><path d="M10 11.5h.01M14 11.5h.01"/><path d="M2.5 12h3M18.5 12h3"/><path d="M4 10.5 2.5 12 4 13.5M20 10.5l1.5 1.5-1.5 1.5"/></svg><b>Shake</b><span>close</span></li>
+    <li data-g="hold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5"/><circle cx="12" cy="12" r="2.2"/></svg><b>Hold</b><span>select</span></li>
+    <li data-g="next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5"/><path d="m10 7-5 5 5 5"/></svg><b>Swipe left</b><span>next</span></li>
+    <li data-g="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="m14 7 5 5-5 5"/></svg><b>Swipe right</b><span>back</span></li>
   </ul>
 </div>
 
 <script>
-  const MODELS = {
-    hand: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-    face: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-  };
+  import { OneEuro, Swipe, Dwell } from '../lib/gestures';
 
-  // Gesture thresholds. First guesses (2026-09-05), to be tuned from real use; see the notes at the top of this file.
+  const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+  // Thresholds. Tune from real use; see the notes at the top of this file.
   const TUNE = {
-    cursorEase: 0.35,     // how fast the cursor follows the fingertip (0..1 per frame)
-    pinchOn: 0.40,        // thumb-to-index distance / palm size: below this is a pinch
-    pinchOff: 0.55,       // above this the pinch has released
-    clickGap: 500,        // ms between pinch clicks
-    clickLookback: 300,   // ms: click where the cursor was this long before the pinch closed (the fingertip drifts as it closes)
-    fingerExt: 1.08,      // a finger is extended when tip-to-wrist exceeds knuckle-to-wrist by this factor
-    openPinchMin: 0.60,   // an open hand also needs the thumb well away from the index finger
-    pushGrow: 1.35,       // palm size grew by this factor within handWindow: push (Deeper)
-    pullShrink: 0.72,     // palm size shrank to this factor: pull (Back)
-    swipeDx: 0.22,        // two-finger horizontal travel, as a fraction of frame width
-    handWindow: 700,      // ms of hand history a push, pull or swipe is judged over
-    navGap: 1200,         // ms between travel gestures
-    yawGain: 1.6,         // head yaw -> tilt
-    pitchGain: 2.5,       // head pitch -> tilt
-    tiltEase: 0.20,       // tilt smoothing
-    turnFlash: 0.50,      // |yaw| above this lights the "Turn head" chip
-    nodPitch: 0.35,       // pitch range within headWindow that counts as a nod
-    nodRelease: 0.20,     // ...and the head has come back up by this much
-    shakeYaw: 0.60,       // yaw range within headWindow that counts as a shake
-    shakeCentre: 0.25,    // ...and the head has come back near centre
-    headWindow: 900,      // ms of head history a nod or shake is judged over
-    headGap: 1500,        // ms between head gestures
-    headAfterHand: 800,   // ms after a hand gesture during which head gestures are ignored
+    reach: 0.6,           // fraction of the camera frame (centred) that maps to the whole screen: smaller = less arm travel
+    filterMinCutoff: 1.0, // One Euro: lower = steadier when still (more lag)
+    filterBeta: 0.02,     // One Euro: higher = quicker to follow fast movement
+    cursorEase: 0.45,     // per animation frame, how far the drawn cursor moves toward the filtered target (0..1)
+    hitRadius: 64,        // px: a node within this distance of the cursor counts as under it
+    dwellMs: 1500,        // hold this long over a node or button to activate it
+    dwellRadius: 26,      // px: the cursor may wander this far while holding
+    dwellRearm: 70,       // px: after activating, move this far away before another hold can fire
+    swipeWindow: 450,     // ms over which a swipe is judged
+    swipeMinDx: 0.28,     // fraction of frame width the wrist must travel sideways
+    swipeMaxDyRatio: 0.6, // vertical travel allowed, as a fraction of the sideways travel
+    navGap: 900,          // ms between swipes
     minFps: 15,           // below this (after the first window) camera control turns itself off
     fpsWindow: 3000,      // ms per frame-rate measurement
-    faceEvery: 2,         // run the face model every n-th frame
   };
   try { Object.assign(TUNE, JSON.parse(localStorage.getItem('hf.tune') || '{}')); } catch { /* ignore */ }
 
@@ -89,29 +74,24 @@ import { BASE } from '../lib/url';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && isSecureContext;
 
-  // ?hf=debug shows the live signals; ?hf=nodebug hides them again. Remembered on this device.
   {
     const q = new URLSearchParams(location.search).get('hf');
     try { if (q === 'debug') localStorage.setItem('hf.debug', '1'); if (q === 'nodebug') localStorage.removeItem('hf.debug'); } catch { /* ignore */ }
   }
   let debug = false; try { debug = localStorage.getItem('hf.debug') === '1'; } catch { /* ignore */ }
 
-  let on = false, starting = false, stream: MediaStream | null = null, hands: any = null, face: any = null, raf = 0, delegate = '';
+  let on = false, starting = false, stream: MediaStream | null = null, hands: any = null, raf = 0, delegate = '';
   let lastVideoTime = -1, frames = 0, fpsT0 = 0, warm = 0, frameNo = 0, fps = 0;
-  const cur = { x: innerWidth / 2, y: innerHeight / 2 };
-  let pinching = false, lastClick = 0, lastNav = 0, lastHandGesture = 0, lastHead = 0, cursorSeen = false, lastGesture = '', lastGestureAt = 0;
-  let handHist: { t: number; s: number; x: number }[] = [];
-  let curHist: { t: number; x: number; y: number }[] = [];
-  let headHist: { t: number; yaw: number; pitch: number }[] = [];
-  const tiltS = { x: 0, y: 0 };
-  const sig = { hand: false, pinch: 0, palm: 0, ext: '', open: false, two: false, face: false, yaw: 0, pitch: 0 };
+  const target = { x: innerWidth / 2, y: innerHeight / 2 }, cur = { x: innerWidth / 2, y: innerHeight / 2 };
+  let handSeen = false, lastNav = 0, lastGesture = '', lastGestureAt = 0, lastTargetKey: string | null = null, dwellProgress = 0, speed = 0, lastT = 0;
+  const fx = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta), fy = new OneEuro(TUNE.filterMinCutoff, TUNE.filterBeta);
+  const swipe = new Swipe({ windowMs: TUNE.swipeWindow, minDx: TUNE.swipeMinDx, maxDyRatio: TUNE.swipeMaxDyRatio });
+  const dwell = new Dwell({ ms: TUNE.dwellMs, radius: TUNE.dwellRadius, rearm: TUNE.dwellRearm });
   const flashTimers: Record<string, any> = {};
   let hideTimer: any = 0;
-
-  const d = (a: any, b: any) => Math.hypot(a.x - b.x, a.y - b.y);
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-  function flash(g: string) {                                   // the legend row for a recognised gesture glows briefly
+  function flash(g: string) {
     lastGesture = g; lastGestureAt = performance.now();
     const row = legend.querySelector<HTMLElement>(`[data-g="${g}"]`); if (!row) return;
     row.classList.add('hit'); clearTimeout(flashTimers[g]); flashTimers[g] = setTimeout(() => row.classList.remove('hit'), 700);
@@ -120,8 +100,7 @@ import { BASE } from '../lib/url';
 
   addEventListener('aidt:experience', (e: Event) => {
     const wantOn = !!(e as CustomEvent).detail?.on;
-    if (!wantOn) { stop(); return; }
-    if (reduced) { stop(); return; }                            // reduced motion: the map is a static list; nothing to steer
+    if (!wantOn || reduced) { stop(); return; }
     if (!supported) { stop("Hands-free control isn't available here (it needs a camera and a secure connection). Sound and visuals are on; mouse, keyboard and touch work as usual."); return; }
     start();
   });
@@ -129,26 +108,23 @@ import { BASE } from '../lib/url';
   async function start() {
     if (on || starting) return; starting = true;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 60 } }, audio: false });
       cam.srcObject = stream; await cam.play();
-      const mp: any = await import('@mediapipe/tasks-vision');   // bundled; loaded only when Experience is turned on
+      const mp: any = await import('@mediapipe/tasks-vision');
       const vision = await mp.FilesetResolver.forVisionTasks(`${BASE}/mediapipe/wasm`);
-      const make = async (del: 'GPU' | 'CPU') => {
-        const h = await mp.HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: MODELS.hand, delegate: del }, runningMode: 'VIDEO', numHands: 1 });
-        const f = await mp.FaceLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: MODELS.face, delegate: del }, runningMode: 'VIDEO', numFaces: 1 });
-        delegate = del; return [h, f];
-      };
-      try { [hands, face] = await make('GPU'); } catch { [hands, face] = await make('CPU'); }
-      if (!document.body.classList.contains('ambient')) { starting = false; stop(); return; }   // Experience was switched off while loading
-      on = true; frames = 0; warm = 0; fps = 0; fpsT0 = performance.now(); lastVideoTime = -1; cursorSeen = false;
+      const make = async (del: 'GPU' | 'CPU') => { const h = await mp.HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: MODEL, delegate: del }, runningMode: 'VIDEO', numHands: 1 }); delegate = del; return h; };
+      try { hands = await make('GPU'); } catch { hands = await make('CPU'); }
+      if (!document.body.classList.contains('ambient')) { starting = false; stop(); return; }
+      on = true; frames = 0; warm = 0; fps = 0; fpsT0 = performance.now(); lastVideoTime = -1; handSeen = false;
+      fx.reset(); fy.reset(); swipe.reset(); dwell.reset();
       document.body.classList.add('handsfree');
       clearTimeout(hideTimer); legend.hidden = false;
-      requestAnimationFrame(() => requestAnimationFrame(() => legend.classList.add('show')));   // float in, after the element is on screen
+      requestAnimationFrame(() => requestAnimationFrame(() => legend.classList.add('show')));
       if (debug) debugEl.hidden = false;
       loop();
     } catch (err: any) {
       const name = err && err.name;
-      const why = name === 'NotAllowedError' ? 'Camera permission was declined.' : name === 'NotFoundError' ? 'No camera was found.' : 'The tracking models could not be loaded.';
+      const why = name === 'NotAllowedError' ? 'Camera permission was declined.' : name === 'NotFoundError' ? 'No camera was found.' : 'The tracking model could not be loaded.';
       stop(`Hands-free control is off. ${why} Sound and visuals stay on; mouse, keyboard and touch work as usual.`);
       if (debug) console.warn('hands-free:', err);
     }
@@ -159,27 +135,31 @@ import { BASE } from '../lib/url';
     on = false; cancelAnimationFrame(raf);
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     cam.srcObject = null;
-    try { hands && hands.close(); face && face.close(); } catch { /* ignore */ }
-    hands = face = null;
+    try { hands && hands.close(); } catch { /* ignore */ }
+    hands = null;
     document.body.classList.remove('handsfree');
-    legend.classList.remove('show'); clearTimeout(hideTimer); hideTimer = setTimeout(() => { legend.hidden = true; }, 750);   // drift out, then leave the page
-    cursor.classList.remove('on', 'pinch'); debugEl.hidden = true;
-    if (map()) map().tilt(0, 0);
+    legend.classList.remove('show'); clearTimeout(hideTimer); hideTimer = setTimeout(() => { legend.hidden = true; }, 750);
+    cursor.classList.remove('on'); cursor.style.setProperty('--p', '0'); debugEl.hidden = true;
+    if (map()) { map().pointer(-1e4, -1e4); }
     if (msg) showNotice(msg);
   }
 
-  function nav(dir: number, g: string) {
-    lastNav = lastHandGesture = performance.now(); handHist = []; headHist = [];
-    map().step(dir); flash(g);
+  // what is under the cursor: a panel or nav control, else the nearest visible node within hitRadius, else nothing
+  function targetAt(x: number, y: number): { key: string; fire: () => void } | null {
+    const el = document.elementFromPoint(x, y);
+    const ctrl = el && (el.closest('#panel a, #panel button, .hud button, .nav a, .nav button, .ask-pill, .ask a, .ask button') as HTMLElement | null);
+    if (ctrl) return { key: 'el:' + (ctrl.id || ctrl.textContent), fire: () => ctrl.click() };
+    const id = map().nodeAt(x, y, TUNE.hitRadius);
+    if (id) return { key: 'node:' + id, fire: () => map().clickNear(x, y, TUNE.hitRadius) };
+    return null;
   }
 
   function renderDebug(now: number) {
     const ago = lastGesture ? `${lastGesture} ${((now - lastGestureAt) / 1000).toFixed(1)}s ago` : '–';
     debugEl.textContent =
       `hands-free debug  ${delegate}  ${fps.toFixed(0)} fps\n` +
-      `hand   ${sig.hand ? 'yes' : 'no '}  pinch ${sig.pinch.toFixed(2)} (on<${TUNE.pinchOn} off>${TUNE.pinchOff})  palm ${sig.palm.toFixed(3)}\n` +
-      `fingers ${sig.ext || '----'}  open ${sig.open ? 'y' : 'n'}  two ${sig.two ? 'y' : 'n'}  pinching ${pinching ? 'y' : 'n'}\n` +
-      `face   ${sig.face ? 'yes' : 'no '}  yaw ${sig.yaw.toFixed(2)}  pitch ${sig.pitch.toFixed(2)}\n` +
+      `hand   ${handSeen ? 'yes' : 'no '}  cursor ${cur.x.toFixed(0)},${cur.y.toFixed(0)}  speed ${speed.toFixed(0)} px/s\n` +
+      `over   ${lastTargetKey || '–'}  hold ${(dwellProgress * 100).toFixed(0)}%\n` +
       `last   ${ago}`;
   }
 
@@ -187,95 +167,57 @@ import { BASE } from '../lib/url';
     if (!on) return;
     raf = requestAnimationFrame(loop);
     const now = performance.now();
-    if (cam.currentTime === lastVideoTime) return;
+
+    // the drawn cursor eases toward the filtered target every animation frame, so it moves smoothly between camera frames
+    if (handSeen) {
+      const px = cur.x, py = cur.y;
+      cur.x += (target.x - cur.x) * TUNE.cursorEase; cur.y += (target.y - cur.y) * TUNE.cursorEase;
+      const dt = Math.max(1, now - lastT); speed = speed * 0.8 + (Math.hypot(cur.x - px, cur.y - py) / dt * 1000) * 0.2;
+      cursor.style.transform = `translate(${cur.x.toFixed(1)}px,${cur.y.toFixed(1)}px)`;
+      map().pointer(cur.x, cur.y);
+    }
+    lastT = now;
+
+    if (cam.currentTime === lastVideoTime) return;                 // no new camera frame yet
     lastVideoTime = cam.currentTime; frames++; frameNo++;
 
-    // graceful degradation: if this device can't keep up, turn camera control off with a one-line notice
     if (now - fpsT0 > TUNE.fpsWindow) {
       fps = frames * 1000 / (now - fpsT0); frames = 0; fpsT0 = now;
       if (warm >= 1 && fps < TUNE.minFps) { stop(`Hands-free control turned off: this device can't track fast enough (under ${TUNE.minFps} frames a second). Sound and visuals stay on.`); return; }
       warm++;
     }
 
-    // ---- hand ----
     const hr = hands.detectForVideo(cam, now);
     const lm = hr && hr.landmarks && hr.landmarks[0];
-    sig.hand = !!lm;
     if (lm) {
       const W = innerWidth, H = innerHeight;
-      const tip = lm[8];
-      const tx = (1 - tip.x) * W, ty = tip.y * H;            // mirrored: the cursor moves the way the hand moves
-      if (!pinching) { cur.x += (tx - cur.x) * TUNE.cursorEase; cur.y += (ty - cur.y) * TUNE.cursorEase; }   // frozen while pinching: the finger moves toward the thumb, the cursor must not
-      curHist.push({ t: now, x: cur.x, y: cur.y }); curHist = curHist.filter(h => now - h.t < TUNE.clickLookback);
-      if (!cursorSeen) { cursorSeen = true; flash('point'); }
-      cursor.classList.add('on');
-      cursor.style.transform = `translate(${cur.x.toFixed(1)}px,${cur.y.toFixed(1)}px)${pinching ? ' scale(.6)' : ''}`;
-      map().pointer(cur.x, cur.y);
+      const tip = lm[8], wrist = lm[0];
+      // mirrored, then the central `reach` slice of the frame stretched to the whole screen
+      const nx = clamp(((1 - tip.x) - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
+      const ny = clamp((tip.y - (0.5 - TUNE.reach / 2)) / TUNE.reach, 0, 1);
+      target.x = fx.filter(nx * W, now); target.y = fy.filter(ny * H, now);
+      if (!handSeen) { handSeen = true; cur.x = target.x; cur.y = target.y; cursor.classList.add('on'); flash('point'); }
 
-      const palm = d(lm[0], lm[9]) || 0.001;
-      const pinch = d(lm[4], lm[8]) / palm;
-      sig.palm = palm; sig.pinch = pinch;
-      if (pinch < TUNE.pinchOn && !pinching && now - lastClick > TUNE.clickGap) {
-        pinching = true; lastClick = lastHandGesture = now; cursor.classList.add('pinch'); handHist = [];
-        // click where the cursor was just before the pinch started (the fingertip drifts as it closes)
-        const at = curHist[0] || cur; cur.x = at.x; cur.y = at.y;
-        const el = document.elementFromPoint(at.x, at.y);
-        const ctrl = el && (el.closest('#panel a, #panel button, .hud button, .nav a, .nav button, .ask-pill, .ask a, .ask button') as HTMLElement | null);
-        if (ctrl) { ctrl.click(); flash('pinch'); }              // pinch on a button or link presses it (See the course, Back, Deeper, Close)
-        else { map().clickNear(at.x, at.y, 64); flash('pinch'); }
-      } else if (pinch > TUNE.pinchOff && pinching) { pinching = false; cursor.classList.remove('pinch'); }
-
-      const tips = [8, 12, 16, 20], pips = [6, 10, 14, 18];
-      const ext = tips.map((t, i) => d(lm[t], lm[0]) > d(lm[pips[i]], lm[0]) * TUNE.fingerExt);
-      const open = ext.filter(Boolean).length >= 4 && pinch > TUNE.openPinchMin;
-      const two = ext[0] && ext[1] && !ext[2] && !ext[3];
-      sig.ext = ext.map(e => (e ? '|' : '.')).join(''); sig.open = open; sig.two = two;
-
-      handHist.push({ t: now, s: palm, x: tip.x });
-      handHist = handHist.filter(h => now - h.t < TUNE.handWindow);
-      if (handHist.length > 4 && now - lastNav > TUNE.navGap && !pinching) {
-        const first = handHist[0];
-        if (open && palm > first.s * TUNE.pushGrow) nav(1, 'push');
-        else if (open && palm < first.s * TUNE.pullShrink) nav(-1, 'pull');
-        else if (two) {
-          const dx = tip.x - first.x;                        // raw x grows toward the viewer's left (mirrored)
-          if (dx > TUNE.swipeDx) nav(1, 'push');                     // swipe left on screen
-          else if (dx < -TUNE.swipeDx) nav(-1, 'pull');              // swipe right on screen
-        }
+      // swipe: the wrist travelling sideways across the frame (raw x grows toward the viewer's left because the image is mirrored)
+      const dir = swipe.push(wrist.x, wrist.y, now);
+      if (dir && now - lastNav > TUNE.navGap) {
+        lastNav = now; dwell.reset();
+        if (dir > 0) { map().step(1); flash('next'); } else { map().step(-1); flash('back'); }
       }
-    } else {
-      cursor.classList.remove('on'); pinching = false; cursor.classList.remove('pinch'); handHist = []; curHist = []; cursorSeen = false;
+
+      // hold: rest on a node or button to activate it; the ring on the cursor shows progress
+      const t = speed > 900 ? null : targetAt(cur.x, cur.y);          // a fast-moving hand is not holding
+      lastTargetKey = t ? t.key : null;
+      const d = dwell.update(cur.x, cur.y, now, t ? t.key : null);
+      dwellProgress = d.progress; cursor.style.setProperty('--p', d.progress.toFixed(3));
+      if (d.fire && t) { t.fire(); flash('hold'); }
+    } else if (handSeen) {
+      handSeen = false; cursor.classList.remove('on'); cursor.style.setProperty('--p', '0');
+      fx.reset(); fy.reset(); swipe.reset(); dwell.reset(); lastTargetKey = null; dwellProgress = 0;
+      map().pointer(-1e4, -1e4);
     }
 
-    // ---- head (every n-th frame) ----
-    if (frameNo % TUNE.faceEvery === 0) {
-      const fr = face.detectForVideo(cam, now);
-      const f = fr && fr.faceLandmarks && fr.faceLandmarks[0];
-      sig.face = !!f;
-      if (f) {
-        const nose = f[1], l = f[234], r = f[454], top = f[10], chin = f[152];
-        const cx = (l.x + r.x) / 2, w = Math.abs(r.x - l.x) || 0.001;
-        const cy = (top.y + chin.y) / 2, h = Math.abs(chin.y - top.y) || 0.001;
-        const yaw = clamp(((nose.x - cx) / (w / 2)) * TUNE.yawGain, -1, 1);
-        const pitch = clamp(((nose.y - cy) / (h / 2)) * TUNE.pitchGain, -1, 1);
-        sig.yaw = yaw; sig.pitch = pitch;
-        tiltS.x += (-yaw - tiltS.x) * TUNE.tiltEase; tiltS.y += (pitch - tiltS.y) * TUNE.tiltEase;
-        map().tilt(tiltS.x, tiltS.y);
-        if (Math.abs(yaw) > TUNE.turnFlash) flash('turn');
-
-        headHist.push({ t: now, yaw, pitch });
-        headHist = headHist.filter(x => now - x.t < TUNE.headWindow);
-        if (headHist.length > 6 && now - lastHead > TUNE.headGap && now - lastHandGesture > TUNE.headAfterHand) {
-          let pMax = -9, pMin = 9, yMax = -9, yMin = 9, tPMax = 0, tPMin = 0;
-          for (const x of headHist) { if (x.pitch > pMax) { pMax = x.pitch; tPMax = x.t; } if (x.pitch < pMin) { pMin = x.pitch; tPMin = x.t; } yMax = Math.max(yMax, x.yaw); yMin = Math.min(yMin, x.yaw); }
-          const back = headHist[headHist.length - 1];
-          if (pMax - pMin > TUNE.nodPitch && tPMax > tPMin && back.pitch < pMax - TUNE.nodRelease) { lastHead = now; headHist = []; nav(1, 'nod'); }
-          else if (yMax - yMin > TUNE.shakeYaw && Math.abs(back.yaw) < TUNE.shakeCentre && map().active()) { lastHead = now; headHist = []; map().close(); flash('shake'); }
-        }
-      }
-    }
-
-    if (debug && frameNo % 4 === 0) renderDebug(now);
+    if (debug && frameNo % 3 === 0) renderDebug(now);
   }
 
   addEventListener('pagehide', () => { if (on) stop(); });

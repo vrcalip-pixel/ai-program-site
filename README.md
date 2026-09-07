@@ -39,12 +39,14 @@ Then open the URL it prints.
 
 ## Hands-free control
 
-The Experience button on the map turns on sound, richer visuals and camera control (BRIEF §10). Hand and face tracking run in the browser with MediaPipe Tasks Vision; the library is bundled from npm, the WASM is served from this site, and the two model files are fetched from Google's model bucket the first time Experience is switched on. No video leaves the device.
+The Experience button on the map turns on sound, richer visuals and camera control (BRIEF §10). Hand tracking runs in the browser with MediaPipe Tasks Vision; the library is bundled from npm, the WASM is served from this site, and the model file is fetched from Google's model bucket the first time Experience is switched on. No video leaves the device.
+
+Four gestures: point (the index fingertip drives the cursor), hold (rest on a node or button for about 1.5 seconds; a ring fills, then it activates), swipe left (next course) and swipe right (back). The interpretation is in `src/lib/gestures.ts` with unit tests in `tests/`; run them with `npm test`.
 
 Tuning from real use:
 
-- Open the map with `?hf=debug` to see a small overlay with the frame rate, the pinch ratio, palm size, finger states, head yaw and pitch, and the last recognised gesture. `?hf=nodebug` hides it again (the choice is remembered on that device).
-- Every threshold is in the `TUNE` object at the top of the script in `src/components/HandsFree.astro`, each with a comment. To try values without a rebuild, set `localStorage.hf.tune` in the browser console to a JSON object with the keys to override, for example `localStorage.setItem('hf.tune', '{"pinchOn":0.35}')`, then turn Experience off and on. Once a value feels right, change it in `TUNE`.
+- Open the map with `?hf=debug` to see a small overlay with the frame rate, cursor position and speed, what is under the cursor, hold progress, and the last recognised gesture. `?hf=nodebug` hides it again (the choice is remembered on that device).
+- Every threshold is in the `TUNE` object at the top of the script in `src/components/HandsFree.astro`, each with a comment. To try values without a rebuild, set `localStorage.hf.tune` in the browser console to a JSON object with the keys to override, for example `localStorage.setItem('hf.tune', '{"dwellMs":1200}')`, then turn Experience off and on. Once a value feels right, change it in `TUNE`.
 - If the device tracks under 15 frames a second, camera control turns itself off with a one-line notice; sound and visuals stay on.
 
 ## Printing

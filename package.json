@@ -11,7 +11,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "og": "node scripts/og.mjs",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "node --experimental-strip-types --test tests/gestures.test.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

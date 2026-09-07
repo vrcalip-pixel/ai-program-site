@@ -32,7 +32,7 @@ type Item = { kind: string; id?: string; number?: string; area?: string; units?:
 function row(it: Item): { code: string; title: string; units: number; href?: string; cls: string } {
   if (it.kind === 'ai') { const c = byId[it.id!]; return { code: c.data.number, title: c.data.title + (c.data.capstone ? ' (capstone)' : ''), units: c.data.units, href: url(`/courses/${c.id}`), cls: 'ai' }; }
   if (it.kind === 'support') { const s = supportBy[it.number!]; return { code: s.number, title: s.title, units: s.units, cls: 'support' }; }
-  if (it.kind === 'ge') { const a = areaBy[it.area!]; return { code: `GE ${a.id}`, title: `${a.name}, e.g. ${a.example.replace(/ \(\d\)$/, '')}`, units: it.units || a.units, cls: 'ge' }; }
+  if (it.kind === 'ge') { const a = areaBy[it.area!]; return { code: 'GE', title: `${a.name}, e.g. ${a.example.replace(/ \(\d\)$/, '')}`, units: it.units || a.units, cls: 'ge' }; }
   return { code: 'Elective', title: it.label || 'Elective', units: it.units || 0, cls: 'elective' };
 }
 const semesters = plans.degreePlan.semesters.map(s => { const rows = s.items.map(row); return { ...s, rows, units: rows.reduce((n, r) => n + r.units, 0) }; });
@@ -120,15 +120,15 @@ const planTotal = semesters.reduce((n, s) => n + s.units, 0);
       <p class="fold-note">{plans.ge.unitsNote}</p>
       <div class="tablewrap" tabindex="0" role="region" aria-label="General education areas, supporting courses and electives">
         <table class="data">
-          <thead><tr><th>Area</th><th>Requirement</th><th>Units</th><th>Example course</th></tr></thead>
+          <thead><tr><th>Requirement</th><th>Units</th><th>Example course, or note</th></tr></thead>
           <tbody>
             {plans.ge.areas.map(a => (
-              <tr><td><b>{a.id}</b></td><td>{a.name}</td><td>{a.units}</td><td>{a.example}{a.note ? <><br /><small style="color:var(--ink-2)">{a.note}</small></> : null}</td></tr>
+              <tr><td>{plans.ge.plan}: {a.name}</td><td>{a.units}</td><td>{a.example}{a.note ? <><br /><small style="color:var(--ink-2)">{a.note}</small></> : null}</td></tr>
             ))}
             {plans.supporting.map(s => (
-              <tr><td><b>{s.number}</b></td><td>Supporting course: {s.title}</td><td>{s.units}</td><td>Required for the degree{s.note ? <><br /><small style="color:var(--ink-2)">{s.note}</small></> : null}</td></tr>
+              <tr><td><b>{s.number}</b> {s.title}</td><td>{s.units}</td><td>Supporting course, required for the degree{s.note ? <><br /><small style="color:var(--ink-2)">{s.note}</small></> : null}</td></tr>
             ))}
-            <tr><td><b>Elective</b></td><td>Degree-applicable courses to reach 60 units</td><td>{electiveUnits}+</td><td>{plans.electives.note}</td></tr>
+            <tr><td>Elective</td><td>{electiveUnits}+</td><td>{plans.electives.note}</td></tr>
           </tbody>
         </table>
       </div>

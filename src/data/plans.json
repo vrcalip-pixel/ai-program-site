@@ -1,10 +1,15 @@
 {
-  "_comment": "Sample plans for the counselor page (Courses and recommended sequence). Figures come from the LBCC catalog program sheet for Plan Code 2150 (supplied by Vincent 2026-09-07), the catalog course entries, and the LBCC-GE pattern. Anything flagged confirm:true still needs Vincent's or Counseling's eye; while any flag is set the section ends with a 'Draft for review' line. The AI courses come from the content collection; program.json holds the ladder.",
+  "_comment": "Sample plans for the counselor page (Courses and recommended sequence). Figures come from the LBCC catalog program sheet for Plan Code 2150 (supplied by Vincent 2026-09-07), the catalog course entries, and the LBCC-GE pattern; confirmed 2026-09-07 (CS 31 = 4 units per Vincent and the course entry; LBCC-GE = 27 units, the same 27–34 GE line as every other LBCC associate-degree sheet). If a figure ever needs re-checking, set confirm:true on it and a 'Draft for review' line appears under the section. The AI courses come from the content collection; program.json holds the ladder.",
   "sources": [
     {
       "id": "sheet",
       "text": "LBCC catalog program sheet, Artificial Intelligence for Digital Transformation, Associate in Science (Plan Code 2150): six AI courses + CS 31, COSP 38, COSN 250; then LBCC-GE or Cal-GETC (27–34 units) and electives numbered 1–599 as needed to reach 60 degree-applicable units; units for the major may double-count for GE",
       "url": "https://lbcc-public.courseleaf.com/programs/"
+    },
+    {
+      "id": "sheets",
+      "text": "Other LBCC associate-degree program sheets in the 2026–27 catalog (Computer Security and Networking A.S., Administrative Assistant A.S., Electrical Technology A.S., Business: Accounting A.A.) carry the same line: LBCC-GE or Cal-GETC, 27–34 units",
+      "url": "https://lbcc-public.courseleaf.com/degrees-certificates/"
     },
     {
       "id": "cs31",
@@ -32,8 +37,8 @@
       "number": "CS 31",
       "title": "Introduction to Computer Science – Python",
       "units": 4,
-      "confirm": true,
-      "note": "The catalog course entry is 4 units (72 hours lecture); the program sheet prints 3 and a 28-unit subtotal. Shown here at the course's catalog value; the sheet is being corrected."
+      "confirm": false,
+      "note": "4 units in the catalog course entry (72 hours lecture). The program sheet prints 3 and a 28-unit subtotal; a correction has been requested."
     },
     {
       "number": "COSP 38",
@@ -51,8 +56,8 @@
   "ge": {
     "plan": "LBCC-GE",
     "unitsMin": 27,
-    "unitsNote": "LBCC-GE is nine areas, one course each, 3 units minimum per area (27 units); the program sheet gives 27–34 units for the GE options, the upper figure being Cal-GETC for students who plan to transfer. Some approved courses are 4 units (for example ENGL C1000 and STAT C1000), which only reduces the electives needed. Units for the major may double-count toward GE; a counselor confirms which.",
-    "confirm": true,
+    "unitsNote": "LBCC-GE is 27 units: nine areas, one course each, 3 units minimum per area. Every LBCC associate-degree sheet in the current catalog lists the general-education options as LBCC-GE or Cal-GETC, 27–34 units; the 34 is Cal-GETC, for students who plan to transfer. Some approved courses are 4 units (for example ENGL C1000 and STAT C1000), which only reduces the electives needed. Units for the major may double-count toward GE; a counselor confirms which.",
+    "confirm": false,
     "areas": [
       {
         "id": "1",
@@ -114,7 +119,7 @@
   },
   "electives": {
     "note": "Electives are any degree-applicable courses numbered 1–599, taken as needed to reach 60 units. With the 29-unit core and 27-unit LBCC-GE, most students need one course, two if every GE course is 3 units. The program recommends choosing it to sharpen a focus.",
-    "confirm": true,
+    "confirm": false,
     "focus": [
       {
         "area": "Web and content",

@@ -8,8 +8,7 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 2. **6-unit Certificate of Accomplishment** — status updated per Vincent, 2026-09-05: "In development", expected to be offered no later than Spring 2027 (BRIEF §2 said "Approved"; the site now follows Vincent). Still open: whether it is transcripted — `src/pages/pathway.astro` (`transcripted()`) shows "To be confirmed".
 
-3. **Degree requirements: two figures to settle with Curriculum/Counseling** — `src/data/plans.json`, `src/components/Plans.astro`
-   The catalog program sheet (Plan Code 2150, supplied 2026-09-07) confirms the core: six AI courses + CS 31, COSP 38, COSN 250, then LBCC-GE or Cal-GETC (27–34) and electives to 60. Still open: (a) CS 31 is 4 units in the catalog course entry but the program sheet prints 3 and a 28-unit subtotal, so the sheet needs correcting; the site shows 4 and a 29-unit core. (b) LBCC-GE is shown as nine areas, 27 units, from the sheet's 27–34 range and the catalog's area list; an older LBCC-GE page still says 19 for an A.S. Each is flagged `confirm` in plans.json; clearing the flags removes the "Draft for review" line.
+3. **Ask Curriculum to correct CS 31 on the program sheet** — the catalog program sheet for Plan Code 2150 prints CS 31 at 3 units and a 28-unit subtotal; the course is 4 units (confirmed by Vincent, 2026-09-07). The site shows 4 and a 29-unit core, with a one-line note under CS 31 in the counselor page's "General education and electives" panel; remove that note (`plans.json`, `supporting[0].note`) once the sheet is fixed. LBCC-GE = 27 units confirmed the same day against the other associate-degree sheets in the 2026–27 catalog (all read "LBCC-GE or Cal-GETC, 27–34").
 
 4. **Recommended preparation for AI 70** — done. AI 60, per its COR (Vincent, 2026-09-05).
 

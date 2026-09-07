@@ -14,6 +14,7 @@ You do not need to touch components to change what the site says.
 |---|---|
 | A course page (description, deliverables, tools, facts) | `src/content/courses/ai-40.md` … `ai-80.md` |
 | Program facts (codes, people, credential ladder, contact email, catalog link) | `src/data/program.json` |
+| People on the About page (bio, photo, links; add future faculty here) | `src/data/people.json`, photos in `public/people/` |
 | Pathway, counselors, employers, about pages | `src/pages/pathway.astro`, `counselors.astro`, `employers.astro`, `about.astro` |
 | The landing map's node text | `src/components/DepthMap.astro` (the `NODES` list) |
 | The request-info form backend (sheet + email) | `scripts/apps-script/Code.gs`, setup in `FORM-SETUP.md`, endpoint in `src/data/program.json` |

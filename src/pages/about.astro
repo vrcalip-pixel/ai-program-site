@@ -3,9 +3,12 @@ import Base from '../layouts/Base.astro';
 import program from '../data/program.json';
 import { url } from '../lib/url';
 import { breadcrumbs } from '../lib/schema';
+import people from '../data/people.json';
+const site = (Astro.site?.toString() || 'https://aifordigitaltransformation.org/').replace(/\/$/, '');
+const personLd = people.people.map(p => ({ '@context': 'https://schema.org', '@type': 'Person', name: p.name, honorificPrefix: p.honorific, jobTitle: p.title, description: p.role, image: site + url(p.photo), worksFor: { '@type': 'CollegeOrUniversity', name: program.college, url: program.collegeUrl }, sameAs: p.links.filter(l => l.href.startsWith('http')).map(l => l.href), url: site + url('/about#people') }));
 
 ---
-<Base title="About the program" description={`Why ${program.name} exists at ${program.college}: an ethics-first, no-code program in applied AI, approved by the Chancellor's Office in March 2026.`} current="about" jsonLd={breadcrumbs([{ name: 'About the program', path: '/about' }])}>
+<Base title="About the program" description={`Why ${program.name} exists at ${program.college}, and who is behind it: an ethics-first, no-code program in applied AI, approved by the Chancellor's Office in March 2026.`} current="about" jsonLd={[breadcrumbs([{ name: 'About the program', path: '/about' }]), ...personLd]}>
   <main id="main" class="page">
     <section class="block" style="padding-top:0">
       <div class="wrap">
@@ -38,7 +41,7 @@ import { breadcrumbs } from '../lib/schema';
           <dl class="facts-dl">
             <dt>Degree</dt><dd>{program.degree}</dd>
             <dt>Approved</dt><dd>{program.approval.body}, {program.approval.date}</dd>
-            <dt>Faculty author</dt><dd>{program.facultyAuthor}, {program.facultyRole.toLowerCase()}</dd>
+            <dt>Faculty author</dt><dd><a href="#people" class="u">{program.facultyAuthor}</a>, {program.facultyRole.toLowerCase()}</dd>
             <dt>Department</dt><dd>{program.department}</dd>
             <dt>Department Head</dt><dd>{program.departmentHead}</dd>
             <dt>School Dean</dt><dd>{program.schoolDean}</dd>
@@ -47,6 +50,30 @@ import { breadcrumbs } from '../lib/schema';
             <dt>CIP / TOP</dt><dd>{program.codes.cip} / {program.codes.top}</dd>
           </dl>
         </div>
+      </div>
+    </section>
+
+    <section class="block people" id="people" aria-labelledby="people-title">
+      <div class="wrap">
+        <span class="eyebrow">The people behind it</span>
+        <h2 id="people-title">Who built this program</h2>
+        <ul class="persons">
+          {people.people.map(p => (
+            <li class="person" id={p.id}>
+              <figure class="photo">
+                <img src={url(p.photo)} srcset={p.photoSmall ? `${url(p.photoSmall)} 500w, ${url(p.photo)} 1000w` : undefined} sizes="(max-width: 820px) 60vw, 360px" width="1000" height="1500" alt={p.photoAlt} loading="lazy" decoding="async" />
+              </figure>
+              <div class="text">
+                <h3>{p.honorific ? `${p.honorific} ` : ''}{p.name}</h3>
+                <p class="title">{p.title}</p>
+                <p class="role">{p.role}</p>
+                <div class="prose bio">{p.bio.map(par => <p>{par}</p>)}</div>
+                {p.highlights?.length > 0 && <ul class="highlights" aria-label="Highlights">{p.highlights.map(h => <li class="chip">{h}</li>)}</ul>}
+                {p.links?.length > 0 && <p class="links">{p.links.map(l => <a class="ghost" href={l.href} rel={l.href.startsWith('http') ? 'me noopener' : undefined}>{l.label}</a>)}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
 

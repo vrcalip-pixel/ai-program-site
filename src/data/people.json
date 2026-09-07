@@ -1,0 +1,31 @@
+{
+  "_comment": "People behind the program, shown on the About page. Add a faculty member by adding an object to `people`; the page renders one card per person. `photo` is a file in public/people/ (1000px wide, 3:4 portrait works best; add a -500 version for phones or leave `photoSmall` out). Bio paragraphs are plain text. TODO(vincent): confirm the title line, degrees, and the 'first in the California Community College system' claim (drafted 2026-09-07 from vrcalip-pixel.github.io).",
+  "people": [
+    {
+      "id": "vincent-calip",
+      "name": "Vincent Calip",
+      "honorific": "Prof.",
+      "title": "Professor of AI and Computer Studies, Long Beach City College",
+      "role": "Faculty author and program director",
+      "photo": "/people/vincent-calip.jpg",
+      "photoSmall": "/people/vincent-calip-500.jpg",
+      "photoAlt": "Vincent Calip, seated on a stool, smiling, in a tan suit and cap",
+      "bio": [
+        "Vincent Calip came to AI from the classroom. For years the job was simple to describe and hard to do well: take something complicated and make it land for the person in front of you. When generative AI arrived, the conversation rushed to the tools; the question that stuck for him was whether the people who teach were ready to meet it. The line that has guided his work since is the one between AI literacy, knowing what it is, and AI fluency, knowing how to work alongside it without losing your judgment.",
+        "Rather than wait for a pathway to exist, he built one: this six-course degree, which he describes as the first associate degree in AI for digital transformation approved in the California Community College system. Ethics first, and no-code and low-code by design, so the door stays open to people who were never told this field was for them.",
+        "Beyond the college he is Principal Investigator of the LARC LA-25 AI Literacy & Innovation Project, which brings AI literacy, curriculum and faculty development to 19 community colleges across Los Angeles County; an MIT Applied GenAI Fellow; the founder of TandemAI, a newsletter, podcast and series on human-centered AI in education; and the author of the ESAI framework for equity-situated AI integration, which grew out of his doctoral research at CSU Long Beach on how career and technical education faculty bring AI into their teaching. He speaks regularly on AI in higher education, including at the Online Teaching Conference, the Academic Senate for California Community Colleges and CCCAOE."
+      ],
+      "highlights": [
+        "Principal Investigator, LARC LA-25 AI Literacy & Innovation Project",
+        "MIT Applied GenAI Fellow",
+        "Founder, TandemAI",
+        "Author, ESAI framework"
+      ],
+      "links": [
+        { "label": "LinkedIn", "href": "https://www.linkedin.com/in/vrcalip" },
+        { "label": "Portfolio", "href": "https://vrcalip-pixel.github.io/" },
+        { "label": "vcalip@lbcc.edu", "href": "mailto:vcalip@lbcc.edu" }
+      ]
+    }
+  ]
+}

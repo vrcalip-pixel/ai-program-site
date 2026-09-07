@@ -32,7 +32,7 @@ Every item below is also marked `TODO(vincent)` in the file it lives in. Facts i
 
 ## Assets
 
-11. **Hero videos (six)** — AI 40, 45, 60, 65 and 70 done 2026-09-07 (Vincent's clips, each encoded to a 4.4 s crossfaded loop, MP4 + WebM + poster, ~0.8 MB each). One to go: AI 80. Hand a session the source MP4 and the course number; it runs `node scripts/hero-video.mjs <clip> ai-nn` and sets `video: true` in that course's frontmatter. Prompts are in BRIEF §9. Until then those heroes show the animated gradient with a "Hero video coming soon" tag.
+11. **Hero videos (six)** — all six done 2026-09-07 from Vincent's clips, each a 4.4 s crossfaded loop (MP4 + WebM + poster, 0.7–1.9 MB per format). To replace one later: `node scripts/hero-video.mjs <clip.mp4> ai-nn` and commit. Note: the AI 70 clip shows a hand; BRIEF §9 says no faces or hands. Vincent has seen it and it stays unless he says otherwise.
 
 12. **Student work showcase** — `src/pages/courses/[slug].astro` ships the section hidden (`data-showcase="empty"`). Remove the attribute when there is work to show.
 

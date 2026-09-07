@@ -165,6 +165,16 @@ aside .path a b{color:var(--sun)}
 .cnav .wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .cnav a{display:block;padding:18px 20px;border-radius:16px;background:var(--plum-2);border:1px solid rgba(238,242,245,.1);text-decoration:none}
 .cnav a:hover{background:rgba(238,242,245,.08)}
+/* course tiles wear their own hero still, under a dark wash that keeps the text at contrast; the image brightens a little on hover */
+.cnav a.tile{position:relative;overflow:hidden;isolation:isolate;min-height:132px;background:var(--plum-2)}
+.cnav a.tile::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--tile) center/cover no-repeat;opacity:.85;transform:scale(1.02);transition:opacity .3s,transform .6s cubic-bezier(.2,.8,.2,1)}
+.cnav a.tile::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(11,22,34,.9) 0%,rgba(11,22,34,.66) 50%,rgba(11,22,34,.34) 100%)}
+.cnav a.tile.next::after{background:linear-gradient(270deg,rgba(11,22,34,.9) 0%,rgba(11,22,34,.66) 50%,rgba(11,22,34,.34) 100%)}
+.cnav a.tile:hover{background:var(--plum-2)}
+.cnav a.tile:hover::before{opacity:1;transform:scale(1.06)}
+.cnav a.tile small,.cnav a.tile b,.cnav a.tile span{position:relative;text-shadow:0 1px 8px rgba(4,9,15,.8)}
+@media (prefers-reduced-motion:reduce){.cnav a.tile::before{transition:none}.cnav a.tile:hover::before{transform:scale(1.02)}}
+@media print{.cnav{display:block}.cnav a.tile::before,.cnav a.tile::after{display:none}}
 .cnav a.next{text-align:right}
 .cnav small{display:block;color:var(--ink-2);font-size:13px}
 .cnav b{color:var(--sun)}

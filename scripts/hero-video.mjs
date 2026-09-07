@@ -27,4 +27,6 @@ const encode = (out, crf, step, make) => { for (let i = 0; i < 3; i++) { run(mak
 encode(`public/video/${slug}.mp4`, 24, 3, crf => ['-i', src, '-filter_complex', filter, '-map', '[v]', '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', String(crf), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', `public/video/${slug}.mp4`]);
 encode(`public/video/${slug}.webm`, 33, 4, crf => ['-i', src, '-filter_complex', filter, '-map', '[v]', '-an', '-c:v', 'libvpx-vp9', '-crf', String(crf), '-b:v', '0', '-row-mt', '1', '-deadline', 'good', '-cpu-used', '2', `public/video/${slug}.webm`]);
 run(['-ss', '0.5', '-i', src, '-frames:v', '1', '-q:v', '3', `public/video/${slug}.jpg`]);
+// the previous/next tiles on course pages use a small version of the same frame (replace with the original still via scripts/tile-image.mjs)
+execFileSync(process.execPath, ['scripts/tile-image.mjs', `public/video/${slug}.jpg`, slug], { stdio: 'inherit' });
 console.log(`hero-video: wrote public/video/${slug}.{mp4,webm,jpg} (${(dur - LOOP).toFixed(2)} s loop). Now set video: true in src/content/courses/${slug}.md`);

@@ -18,6 +18,7 @@ You do not need to touch components to change what the site says.
 | Pathway, counselors, employers, about pages | `src/pages/pathway.astro`, `counselors.astro`, `employers.astro`, `about.astro` |
 | The landing map's node text | `src/components/DepthMap.astro` (the `NODES` list) |
 | The request-info form backend (sheet + email) | `scripts/apps-script/Code.gs`, setup in `FORM-SETUP.md`, endpoint in `src/data/program.json` |
+| Previous/next tile backgrounds on course pages | `node scripts/tile-image.mjs <still> ai-nn` writes `public/tiles/ai-nn.jpg` from the still the hero was made from (the hero script writes one from the video's poster frame by default) |
 | Hero videos | `node scripts/hero-video.mjs <clip.mp4> ai-nn` writes `public/video/ai-nn.{mp4,webm,jpg}` as a crossfaded loop (needs ffmpeg on PATH or `FFMPEG=`), then set `video: true` in that course's frontmatter |
 | "Ask the program" answers | `src/data/faq.json` |
 | "Where are you on the ladder?" (pathway checklist) | nothing to edit: it reads `program.json` and the course files |

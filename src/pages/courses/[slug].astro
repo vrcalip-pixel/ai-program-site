@@ -104,8 +104,9 @@ const pathwayHref = url(`/pathway#${d.countsToward.id}`);
 
     <nav class="cnav" aria-label="Course navigation">
       <div class="wrap">
-        {prev ? <a class="prev" href={url(`/courses/${prev.id}`)}><small>Previous course</small><b>{prev.data.number}</b><span>{prev.data.title}</span></a> : <a class="prev" href={url('/')}><small>Start</small><b>Map</b><span>Explore the program</span></a>}
-        {next ? <a class="next" href={url(`/courses/${next.id}`)}><small>Next course</small><b>{next.data.number}</b><span>{next.data.title}</span></a> : <a class="next" href={url('/pathway#degree')}><small>After the capstone</small><b>Degree</b><span>{program.degree}</span></a>}
+        {/* each course tile carries that course's own hero still behind it, so the next page is recognisable before you arrive */}
+        {prev ? <a class={`prev${prev.data.video ? ' tile' : ''}`} href={url(`/courses/${prev.id}`)} style={prev.data.video ? `--tile:url(${url(`/tiles/${prev.id}.jpg`)})` : undefined}><small>Previous course</small><b>{prev.data.number}</b><span>{prev.data.title}</span></a> : <a class="prev" href={url('/')}><small>Start</small><b>Map</b><span>Explore the program</span></a>}
+        {next ? <a class={`next${next.data.video ? ' tile' : ''}`} href={url(`/courses/${next.id}`)} style={next.data.video ? `--tile:url(${url(`/tiles/${next.id}.jpg`)})` : undefined}><small>Next course</small><b>{next.data.number}</b><span>{next.data.title}</span></a> : <a class="next" href={url('/pathway#degree')}><small>After the capstone</small><b>Degree</b><span>{program.degree}</span></a>}
       </div>
     </nav>
   </main>

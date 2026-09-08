@@ -1,7 +1,7 @@
 // Run with: node --experimental-strip-types --test tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OneEuro, Swipe, Dwell, isFist, Fist, openHand, palmCentre, Throw } from '../src/lib/gestures.ts';
+import { OneEuro, Swipe, Dwell, isFist, Fist, openHand, palmCentre, Throw, Pull, handSize } from '../src/lib/gestures.ts';
 
 test('OneEuro damps jitter when still and follows fast motion', () => {
   const f = new OneEuro(1.0, 0.02);
@@ -163,4 +163,51 @@ test('Throw fires on grab, toss, release; not for a fist that was never open, ne
   for (let i = 1; i <= 30; i++) th.push(0.4 + i * 0.006, 0.5, 6000 + i * 40, false, true);              // 1.2 s closed: a hold, not a toss
   dir = th.push(0.6, 0.5, 6000 + 31 * 40, true, false);
   assert.equal(dir, 0);
+});
+
+
+test('Pull fires when an open palm shrinks into a fist, not for a same-size fist, a shrinking open hand, or a fist that was never open', () => {
+  const pl = new Pull({ shrink: 0.3, windowMs: 1500, minOpenSize: 0.1 });
+  let fired = 0;
+  for (let t = 0; t <= 300; t += 33) fired += pl.push(0.24, t, true, false);                 // open palm, close to the camera
+  for (let t = 333; t <= 500; t += 33) fired += pl.push(0.22 - (t - 333) / 4000, t, false, false); // closing, drawing back
+  for (let t = 533; t <= 900; t += 33) fired += pl.push(0.22 - (t - 333) / 4000, t, false, true);  // fist, still shrinking: fires at 70%
+  assert.equal(fired, 1);
+  for (let t = 933; t <= 1400; t += 33) fired += pl.push(0.1, t, false, true);               // held smaller: nothing more
+  assert.equal(fired, 1);
+  pl.reset();
+  for (let t = 2000; t <= 2300; t += 33) fired += pl.push(0.24, t, true, false);
+  for (let t = 2333; t <= 3300; t += 33) fired += pl.push(0.235, t, false, true);            // fist at the same size (a back): nothing
+  assert.equal(fired, 1);
+  pl.reset();
+  for (let t = 4000; t <= 5000; t += 33) fired += pl.push(0.24 - (t - 4000) / 8000, t, true, false); // backing away with the hand open: nothing
+  assert.equal(fired, 1);
+  pl.reset();
+  for (let t = 6000; t <= 6500; t += 33) fired += pl.push(0.24 - (t - 6000) / 3000, t, false, true); // fist from the start: nothing
+  assert.equal(fired, 1);
+  pl.reset();
+  for (let t = 7000; t <= 7300; t += 33) fired += pl.push(0.08, t, true, false);             // open hand too small (too far away) to count
+  for (let t = 7333; t <= 7800; t += 33) fired += pl.push(0.05, t, false, true);
+  assert.equal(fired, 1);
+});
+
+test('A pull-back never registers as back: the fist shrinks past the size tolerance', () => {
+  const f = new Fist({ holdMs: 700, openMs: 250, stillRadius: 0.06, sizeTolerance: 0.18 });
+  const pl = new Pull({ shrink: 0.3, windowMs: 1500, minOpenSize: 0.1 });
+  let back = 0, reset = 0;
+  const step = (t: number, size: number, open: boolean, fist: boolean) => { reset += pl.push(size, t, open, fist); if (f.update(fist, t, 0.5, 0.5, size).fire) back++; };
+  for (let t = 0; t <= 300; t += 33) step(t, 0.24, true, false);
+  for (let t = 333; t <= 1500; t += 33) step(t, Math.max(0.12, 0.24 - (t - 333) / 5000), false, true); // slow pull over a second
+  assert.deepEqual([back, reset], [0, 1]);
+  f.reset(); pl.reset();
+  for (let t = 2000; t <= 2300; t += 33) step(t, 0.2, true, false);
+  for (let t = 2333; t <= 3300; t += 33) step(t, 0.2 + (t % 2) * 0.01, false, true);       // fist held at one depth: back only
+  assert.deepEqual([back, reset], [1, 1]);
+});
+
+test('handSize is the wrist-to-middle-base distance and ignores finger curl', () => {
+  const a = hand(true), b = hand(false);
+  for (const lm of [a, b]) { lm[0] = { x: 0.5, y: 0.9 }; lm[9] = { x: 0.5, y: 0.7 }; }
+  assert.ok(Math.abs(handSize(a) - 0.2) < 1e-9);
+  assert.ok(Math.abs(handSize(a) - handSize(b)) < 1e-9);
 });

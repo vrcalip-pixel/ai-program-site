@@ -83,19 +83,21 @@ export function isFist(lm: { x: number; y: number }[], curlRatio = 1.05, minCurl
 }
 
 /**
- * Held fist, kept in place: fires once after the fist has stayed within `stillRadius` (frame widths) of where it closed
- * for `holdMs`; will not fire again until the hand has been open for `openMs`. A fist that leaves that circle is a
- * throw or a return, not a hold, and cannot become a hold until the hand opens again. This is what keeps back and
- * throw-aside apart: a throw leaves the circle and opens within Throw.windowMs; a back never leaves it and outlasts
- * that window (keep holdMs > Throw.windowMs).
+ * Held fist, kept in place: fires once after the fist has stayed within `stillRadius` (frame widths) of where it closed,
+ * and within `sizeTolerance` of the hand size it closed at (no travel toward or away from the camera), for `holdMs`;
+ * will not fire again until the hand has been open for `openMs`. A fist that leaves that circle, or changes size, is a
+ * pull, a throw or a return, not a hold, and cannot become a hold until the hand opens again. That is what keeps back
+ * apart from the pull-back reset (Pull: the hand shrinks as it closes) and from the older throw-aside (Throw: the hand
+ * travels sideways and reopens within Throw.windowMs; keep holdMs > Throw.windowMs if both are wired).
  */
 export class Fist {
   private since: number | null = null; private openSince: number | null = null; private armed = true;
-  private anchor: { x: number; y: number } | null = null; private left = false;
-  opts: { holdMs: number; openMs: number; stillRadius: number };
-  constructor(opts = { holdMs: 700, openMs: 250, stillRadius: 0.06 }) { this.opts = { stillRadius: 0.06, ...opts }; }
-  /** `x`,`y`: the palm centre in frame units (0..1); omit to skip the stillness test. */
-  update(fist: boolean, t: number, x?: number, y?: number): { progress: number; fire: boolean; left: boolean } {
+  private anchor: { x: number; y: number; size: number } | null = null; private left = false;
+  opts: { holdMs: number; openMs: number; stillRadius: number; sizeTolerance: number };
+  constructor(opts = { holdMs: 700, openMs: 250, stillRadius: 0.06, sizeTolerance: 0.18 }) { this.opts = { stillRadius: 0.06, sizeTolerance: 0.18, ...opts }; }
+  /** `x`,`y`: the palm centre in frame units (0..1); `size`: hand size (see handSize) so a fist moving toward or away from
+   *  the camera is not a hold either. Omit both to skip the stillness test. */
+  update(fist: boolean, t: number, x?: number, y?: number, size?: number): { progress: number; fire: boolean; left: boolean } {
     if (!fist) {
       this.since = null; this.anchor = null; this.left = false;
       if (this.openSince === null) this.openSince = t;
@@ -104,8 +106,11 @@ export class Fist {
     }
     this.openSince = null;
     if (!this.armed) return { progress: 0, fire: false, left: this.left };
-    if (this.since === null) { this.since = t; this.anchor = x !== undefined && y !== undefined ? { x, y } : null; this.left = false; }
-    if (this.anchor && x !== undefined && y !== undefined && Math.hypot(x - this.anchor.x, y - this.anchor.y) > this.opts.stillRadius) this.left = true;
+    if (this.since === null) { this.since = t; this.anchor = x !== undefined && y !== undefined ? { x, y, size: size ?? 0 } : null; this.left = false; }
+    if (this.anchor && x !== undefined && y !== undefined) {
+      if (Math.hypot(x - this.anchor.x, y - this.anchor.y) > this.opts.stillRadius) this.left = true;
+      if (size !== undefined && this.anchor.size > 0 && Math.abs(size / this.anchor.size - 1) > this.opts.sizeTolerance) this.left = true;
+    }
     if (this.left) return { progress: 0, fire: false, left: true };
     const progress = Math.min(1, (t - this.since) / this.opts.holdMs);
     if (progress >= 1) { this.armed = false; this.since = null; return { progress: 1, fire: true, left: false }; }
@@ -131,8 +136,39 @@ export function palmCentre(lm: { x: number; y: number }[]): { x: number; y: numb
   return { x: x / ids.length, y: y / ids.length };
 }
 
+/** Hand size in frame units: wrist to the base of the middle finger. Both are palm points, so it barely changes as the
+ *  fingers curl, and it shrinks as the hand moves away from the camera: a usable depth signal without a depth camera. */
+export function handSize(lm: { x: number; y: number }[]): number { return Math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y); }
+
 /**
- * Throw aside, as if tossing something away: an open hand closes to a fist (grab), sweeps sideways while closed (toss)
+ * Pull back: an open palm held toward the camera (large), then drawn away while closing into a fist (small). Fires once
+ * when the hand is a fist and its size has fallen to (1 - `shrink`) of the largest open-hand size seen in the last
+ * `windowMs`, provided that open hand was at least `minOpenSize`; re-arms once the hand opens again. A fist that stays
+ * the same size (a back) never fires this; a hand that only shrinks while open (backing away) never fires either.
+ */
+export class Pull {
+  private opens: { size: number; t: number }[] = [];
+  private armed = true;
+  private lastRatio = 1;
+  opts: { shrink: number; windowMs: number; minOpenSize: number };
+  constructor(opts = { shrink: 0.3, windowMs: 1500, minOpenSize: 0.1 }) { this.opts = opts; }
+  /** 0..1: how far the closed hand has shrunk toward the threshold (for a progress bar); 0 unless a fist with a recent open hand. */
+  progress(): number { return Math.max(0, Math.min(1, (1 - this.lastRatio) / this.opts.shrink)); }
+  push(size: number, t: number, open: boolean, fist: boolean): number {
+    this.opens = this.opens.filter(o => t - o.t <= this.opts.windowMs);
+    if (open) { this.opens.push({ size, t }); this.armed = true; this.lastRatio = 1; return 0; }
+    if (!fist) { this.lastRatio = 1; return 0; }
+    const ref = this.opens.reduce((m, o) => Math.max(m, o.size), 0);
+    if (!this.armed || ref < this.opts.minOpenSize) { this.lastRatio = 1; return 0; }
+    this.lastRatio = size / ref;
+    if (this.lastRatio <= 1 - this.opts.shrink) { this.armed = false; this.opens = []; this.lastRatio = 1; return 1; }
+    return 0;
+  }
+  reset() { this.opens = []; this.armed = true; this.lastRatio = 1; }
+}
+
+/**
+ * Throw aside, as if tossing something away (kept in the library, not wired since 2026-09-08; the pull-back reset replaced it): an open hand closes to a fist (grab), sweeps sideways while closed (toss)
  * and opens again (release). Fires on the release, returning the sign of the travel, when the fist phase moved at least
  * `minDx` at `minSpeed` or more and lasted no longer than `windowMs`. A fist that stays put is a hold, not a throw
  * (the Fist detector owns that), so the throw quietly abandons after `windowMs` of closed hand; keep windowMs below

@@ -24,6 +24,7 @@ You do not need to touch components to change what the site says.
 | "Where are you on the ladder?" (pathway checklist) | nothing to edit: it reads `program.json` and the course files |
 | Labor-market dashboard on the employers page (figures, sources, APA 7 references) | `src/data/labor.json`; the component `src/components/LaborDashboard.astro` renders it and builds the reference list from the same file |
 | Structured data (JSON-LD for search engines) | `src/lib/schema.ts`; values come from `program.json` and the course files |
+| Counselor page hero video | `public/video/counselors.{mp4,webm,jpg}`, encoded with `node scripts/hero-video.mjs <clip.mp4> counselors` (ignore the script's closing note about `video: true`; delete the tile it writes to `public/tiles/`); markup at the top of `src/pages/counselors.astro` |
 | Industry credentials (IBM, Microsoft, Google, OpenAI, Anthropic, AWS) on the counselor page | `src/data/credentials.json`; rendered by `src/components/IndustryCredentials.astro` |
 | Sample plans on the counselor page (certificates, degree, GE, electives) | `src/data/plans.json`; rendered by `src/components/Plans.astro` |
 | Hands-free gesture thresholds | `TUNE` at the top of the script in `src/components/HandsFree.astro` (see below) |

@@ -14,10 +14,13 @@
  *   hold ........... rest the cursor on a node or button for just over half a second; a ring fills, then it activates
  *   swipe left ..... next (Deeper), as if moving something along: an open hand sweeps toward your left. Judged on the palm
  *                    centre (steadier than a fingertip), on distance and speed, and only while the hand is open
- *   fist ........... back: close the hand and hold it still for a third of a second (a swipe right collided with the hand
+ *   fist ........... back: close the hand and keep it where it closed for 0.7 s (a swipe right collided with the hand
  *                    returning after a swipe left, so back is a different shape, not a different direction)
  *   throw aside .... reset: open hand closes to a fist (grab), moves toward your left while closed (toss) and opens
- *                    again (release), as if tossing something away. Recentres the map to its starting view.
+ *                    again within 0.6 s (release), as if tossing something away. Recentres the map to its starting view.
+ * Back and throw cannot both be true (2026-09-08, after they were confused in real use): a fist that leaves a small
+ * circle around where it closed can no longer be a back until the hand reopens, and a fist held past the throw window
+ * can no longer be a throw. The circle (fistStillRadius) and the two times (fistHoldMs > throwWindow) are in TUNE.
  * Latency: the swipe is judged from the moment the hand is in view, not from the moment it reads as open, and a frame
  * or two where the fingers read as not-quite-open no longer wipes the swipe history (openGrace).
  * Steadiness: a One Euro filter on the fingertip, a central slice of the camera frame mapped to the whole screen
@@ -70,11 +73,11 @@ import { BASE } from '../lib/url';
     handGrace: 300,       // ms a hand may drop out of tracking mid-swipe before the swipe history is cleared
     trackConfidence: 0.4, // MediaPipe detection, presence and tracking confidence (lower keeps a fast-moving hand)
     navGap: 900,          // ms between travel gestures
-    fistHoldMs: 350,      // hold a fist this long to go back
+    fistHoldMs: 700,      // keep a fist in place this long to go back (must stay longer than throwWindow, so a toss can never be a back)
     fistOpenMs: 250,      // the hand must be open this long before another fist counts
-    fistStillSpeed: 0.35, // frame widths per second: a fist moving faster than this is travelling (a throw), not held for back
+    fistStillRadius: 0.06, // fraction of frame width: a fist that moves farther than this from where it closed is a throw, not a hold
     fistCurl: 1.05,       // a finger is curled when its tip is closer to the wrist than its middle joint (times this)
-    throwWindow: 700,     // ms the hand may stay closed between grab and release for a throw
+    throwWindow: 600,     // ms the hand may stay closed between grab and release for a throw (must be shorter than fistHoldMs)
     throwMinDx: 0.12,     // fraction of frame width the closed hand must travel toward your left
     throwMinSpeed: 0.25,  // frame widths per second while closed
     throwOpenWithin: 450, // ms: the hand must have been open this recently for closing it to count as a grab
@@ -111,7 +114,8 @@ import { BASE } from '../lib/url';
   const resetChip = legend.querySelector<HTMLElement>('[data-g="reset"]')!;
   let openNow = false, palmSpeed = 0, lastPalm: { x: number; y: number; t: number } | null = null;
   const dwell = new Dwell({ ms: TUNE.dwellMs, radius: TUNE.dwellRadius, rearm: TUNE.dwellRearm });
-  const fist = new Fist({ holdMs: TUNE.fistHoldMs, openMs: TUNE.fistOpenMs });
+  const fist = new Fist({ holdMs: TUNE.fistHoldMs, openMs: TUNE.fistOpenMs, stillRadius: TUNE.fistStillRadius });
+  let fistLeft = false;
   let fistNow = false, fistProgress = 0;
   const flashTimers: Record<string, any> = {};
   let hideTimer: any = 0;
@@ -185,9 +189,9 @@ import { BASE } from '../lib/url';
     debugEl.textContent =
       `hands-free debug  ${delegate}  ${fps.toFixed(0)} fps\n` +
       `hand   ${handSeen ? 'yes' : 'no '}  cursor ${cur.x.toFixed(0)},${cur.y.toFixed(0)}  speed ${speed.toFixed(0)} px/s\n` +
-      `over   ${lastTargetKey || '–'}  hold ${(dwellProgress * 100).toFixed(0)}%  fist ${fistNow ? 'yes' : 'no '} ${(fistProgress * 100).toFixed(0)}%\n` +
+      `over   ${lastTargetKey || '–'}  hold ${(dwellProgress * 100).toFixed(0)}%  fist ${fistNow ? (fistLeft ? 'moved (throw or nothing)' : `in place ${(fistProgress * 100).toFixed(0)}% to back`) : 'no'}\n` +
       `swipe  ${(swipe.peek() >= 0 ? '+' : '')}${swipe.peek().toFixed(2)} of frame, hand ${openNow ? 'open' : 'not open'}, palm ${palmSpeed.toFixed(2)} fw/s (next fires at +${TUNE.swipeMinDx} within ${TUNE.swipeWindow} ms; + is toward your left)\n` +
-      `throw  ${(thrower.progress(1) * 100).toFixed(0)}% (grab, move left while closed, release)\n` +
+      `throw  ${(thrower.progress(1) * 100).toFixed(0)}% (grab, move left while closed, release within ${TUNE.throwWindow} ms)\n` +
       `last   ${ago}`;
   }
 
@@ -235,7 +239,6 @@ import { BASE } from '../lib/url';
       const palm = palmCentre(lm);
       if (lastPalm) { const dt = Math.max(1, now - lastPalm.t) / 1000; palmSpeed = palmSpeed * 0.6 + (Math.hypot(palm.x - lastPalm.x, palm.y - lastPalm.y) / dt) * 0.4; }
       lastPalm = { x: palm.x, y: palm.y, t: now };
-      const moving = palmSpeed > TUNE.fistStillSpeed;
 
       // throw aside: grab (open to fist), toss toward your left while closed, release (open). Judged first so that the
       // release, an open hand still travelling, is not read as the start of a swipe. Recentres the map.
@@ -243,8 +246,8 @@ import { BASE } from '../lib/url';
       resetChip.style.setProperty('--p', thrower.progress(1).toFixed(2));
       if (thr > 0 && now - lastNav > TUNE.navGap) { lastNav = now; swipe.reset(); dwell.reset(); fist.disarm(); resetChip.style.setProperty('--p', '0'); map().close(); flash('reset'); }
 
-      // fist, held still: back. Fires once; the hand must open again before another counts. A fist on the move is a throw.
-      const fr = fist.update(fistNow, now, moving); fistProgress = fr.progress;
+      // fist kept in place: back. Fires once; the hand must open again before another counts. A fist that leaves its circle is a throw.
+      const fr = fist.update(fistNow, now, palm.x, palm.y); fistProgress = fr.progress; fistLeft = fr.left;
       if (fr.fire && now - lastNav > TUNE.navGap) { lastNav = now; swipe.reset(); dwell.reset(); thrower.reset(); map().step(-1); flash('back'); }
 
       // swipe: an open hand sweeping toward the viewer's left (next), judged on the palm centre from the moment the hand is

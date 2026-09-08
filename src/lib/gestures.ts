@@ -82,28 +82,36 @@ export function isFist(lm: { x: number; y: number }[], curlRatio = 1.05, minCurl
   return curled >= minCurled;
 }
 
-/** Held fist: fires once after the fist has been held `holdMs`; will not fire again until the hand has been open for `openMs`. */
+/**
+ * Held fist, kept in place: fires once after the fist has stayed within `stillRadius` (frame widths) of where it closed
+ * for `holdMs`; will not fire again until the hand has been open for `openMs`. A fist that leaves that circle is a
+ * throw or a return, not a hold, and cannot become a hold until the hand opens again. This is what keeps back and
+ * throw-aside apart: a throw leaves the circle and opens within Throw.windowMs; a back never leaves it and outlasts
+ * that window (keep holdMs > Throw.windowMs).
+ */
 export class Fist {
   private since: number | null = null; private openSince: number | null = null; private armed = true;
-  opts: { holdMs: number; openMs: number };
-  constructor(opts = { holdMs: 350, openMs: 250 }) { this.opts = opts; }
-  /** `moving` = the hand is travelling; a fist on the move is a throw or a return, not a hold, so the timer restarts. */
-  update(fist: boolean, t: number, moving = false): { progress: number; fire: boolean } {
+  private anchor: { x: number; y: number } | null = null; private left = false;
+  opts: { holdMs: number; openMs: number; stillRadius: number };
+  constructor(opts = { holdMs: 700, openMs: 250, stillRadius: 0.06 }) { this.opts = { stillRadius: 0.06, ...opts }; }
+  /** `x`,`y`: the palm centre in frame units (0..1); omit to skip the stillness test. */
+  update(fist: boolean, t: number, x?: number, y?: number): { progress: number; fire: boolean; left: boolean } {
     if (!fist) {
-      this.since = null;
+      this.since = null; this.anchor = null; this.left = false;
       if (this.openSince === null) this.openSince = t;
       if (!this.armed && t - this.openSince >= this.opts.openMs) this.armed = true;
-      return { progress: 0, fire: false };
+      return { progress: 0, fire: false, left: false };
     }
     this.openSince = null;
-    if (!this.armed) return { progress: 0, fire: false };
-    if (moving) { this.since = null; return { progress: 0, fire: false }; }
-    if (this.since === null) this.since = t;
+    if (!this.armed) return { progress: 0, fire: false, left: this.left };
+    if (this.since === null) { this.since = t; this.anchor = x !== undefined && y !== undefined ? { x, y } : null; this.left = false; }
+    if (this.anchor && x !== undefined && y !== undefined && Math.hypot(x - this.anchor.x, y - this.anchor.y) > this.opts.stillRadius) this.left = true;
+    if (this.left) return { progress: 0, fire: false, left: true };
     const progress = Math.min(1, (t - this.since) / this.opts.holdMs);
-    if (progress >= 1) { this.armed = false; this.since = null; return { progress: 1, fire: true }; }
-    return { progress, fire: false };
+    if (progress >= 1) { this.armed = false; this.since = null; return { progress: 1, fire: true, left: false }; }
+    return { progress, fire: false, left: false };
   }
-  reset() { this.since = null; this.openSince = null; this.armed = true; }
+  reset() { this.since = null; this.openSince = null; this.armed = true; this.anchor = null; this.left = false; }
   disarm() { this.armed = false; this.since = null; }
 }
 
@@ -127,7 +135,8 @@ export function palmCentre(lm: { x: number; y: number }[]): { x: number; y: numb
  * Throw aside, as if tossing something away: an open hand closes to a fist (grab), sweeps sideways while closed (toss)
  * and opens again (release). Fires on the release, returning the sign of the travel, when the fist phase moved at least
  * `minDx` at `minSpeed` or more and lasted no longer than `windowMs`. A fist that stays put is a hold, not a throw
- * (the Fist detector owns that), so the throw quietly abandons after `windowMs` of closed hand. The grab only counts
+ * (the Fist detector owns that), so the throw quietly abandons after `windowMs` of closed hand; keep windowMs below
+ * Fist.holdMs so the two can never both be satisfied. The grab only counts
  * within `openWithinMs` of the hand last being open, so a fist that arrives already closed never throws.
  */
 export class Throw {
@@ -135,7 +144,7 @@ export class Throw {
   private lastOpenAt = -Infinity;
   private peak = 0;                                   // farthest sideways travel while closed, signed
   opts: { windowMs: number; minDx: number; maxDyRatio: number; minSpeed: number; openWithinMs: number };
-  constructor(opts = { windowMs: 700, minDx: 0.12, maxDyRatio: 0.9, minSpeed: 0.25, openWithinMs: 450 }) { this.opts = { openWithinMs: 450, ...opts }; }
+  constructor(opts = { windowMs: 600, minDx: 0.12, maxDyRatio: 0.9, minSpeed: 0.25, openWithinMs: 450 }) { this.opts = { openWithinMs: 450, ...opts }; }
   /** 0..1: how much of `minDx` the closed hand has travelled so far (for a progress bar). */
   progress(sign = 1): number { return this.grab ? Math.max(0, Math.min(1, (this.peak * sign) / this.opts.minDx)) : 0; }
   push(x: number, y: number, t: number, open: boolean, fist: boolean): number {

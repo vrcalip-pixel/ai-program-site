@@ -86,7 +86,7 @@ test('isFist tells a curled hand from an open one', () => {
 });
 
 test('Fist fires once after being held, not while held, and re-arms only after the hand opens', () => {
-  const f = new Fist({ holdMs: 350, openMs: 250 });
+  const f = new Fist({ holdMs: 350, openMs: 250, stillRadius: 0.06 });
   let fired = 0;
   for (let t = 0; t <= 200; t += 33) if (f.update(true, t).fire) fired++;           // too short
   assert.equal(fired, 0);
@@ -112,17 +112,36 @@ test('Swipe keeps its run through a brief not-open flicker but drops it after a 
   assert.equal(dir, 0);
 });
 
-test('Fist only counts as a hold while still; a fist on the move never fires back', () => {
-  const f = new Fist({ holdMs: 350, openMs: 250 });
+test('Fist only counts as a hold while it stays put; a fist that leaves its circle never fires back until the hand reopens', () => {
+  const f = new Fist({ holdMs: 700, openMs: 250, stillRadius: 0.06 });
   let fired = 0;
-  for (let t = 0; t <= 800; t += 33) if (f.update(true, t, true).fire) fired++;       // moving fist
+  for (let t = 0; t <= 300; t += 33) if (f.update(true, t, 0.5 + t / 3000, 0.5).fire) fired++;      // closes and drifts 0.1 to the left: leaves the circle
+  for (let t = 333; t <= 1500; t += 33) if (f.update(true, t, 0.6, 0.5).fire) fired++;               // now still, but it already left: no back
   assert.equal(fired, 0);
-  for (let t = 833; t <= 1400; t += 33) if (f.update(true, t, false).fire) fired++;   // now still: fires once
+  for (let t = 1533; t <= 1900; t += 33) f.update(false, t, 0.6, 0.5);                                // opens
+  for (let t = 1933; t <= 2900; t += 33) if (f.update(true, t, 0.6 + (t % 2) * 0.01, 0.5).fire) fired++; // closes and jitters within the circle: fires once at 700 ms
   assert.equal(fired, 1);
 });
 
+test('A quick grab-and-toss never registers as back, and a held fist never registers as a throw', () => {
+  const f = new Fist({ holdMs: 700, openMs: 250, stillRadius: 0.06 });
+  const th = new Throw({ windowMs: 600, minDx: 0.12, maxDyRatio: 0.9, minSpeed: 0.25, openWithinMs: 450 });
+  let back = 0, reset = 0;
+  const step = (t: number, x: number, open: boolean, fist: boolean) => { if (th.push(x, 0.5, t, open, fist) > 0) reset++; if (f.update(fist, t, x, 0.5).fire) back++; };
+  for (let t = 0; t <= 200; t += 33) step(t, 0.4, true, false);                    // open hand
+  for (let t = 233; t <= 366; t += 33) step(t, 0.4, false, true);                  // grab, brief pause
+  for (let t = 400; t <= 600; t += 33) step(t, 0.4 + (t - 366) / 1000, false, true); // toss left, ~0.23 over 200 ms
+  step(633, 0.64, true, false);                                                     // release
+  assert.deepEqual([back, reset], [0, 1]);
+  f.reset(); th.reset();
+  for (let t = 1000; t <= 1200; t += 33) step(t, 0.5, true, false);                // open hand
+  for (let t = 1233; t <= 2200; t += 33) step(t, 0.5 + (t % 3) * 0.005, false, true); // fist held in place with jitter for ~1 s
+  step(2233, 0.52, true, false);                                                    // opens afterwards
+  assert.deepEqual([back, reset], [1, 1]);
+});
+
 test('Throw fires on grab, toss, release; not for a fist that was never open, never moved, or was held too long', () => {
-  const th = new Throw({ windowMs: 700, minDx: 0.12, maxDyRatio: 0.9, minSpeed: 0.25, openWithinMs: 450 });
+  const th = new Throw({ windowMs: 600, minDx: 0.12, maxDyRatio: 0.9, minSpeed: 0.25, openWithinMs: 450 });
   let dir = 0;
   for (let i = 0; i <= 5; i++) dir = th.push(0.4, 0.5, i * 40, true, false) || dir;                   // open, still
   for (let i = 6; i <= 12; i++) dir = th.push(0.4 + (i - 6) * 0.025, 0.5, i * 40, false, true) || dir; // closes, sweeps left (raw +x) 0.15 in 240 ms

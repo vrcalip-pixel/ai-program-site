@@ -9,7 +9,7 @@ import { url } from '../lib/url';
 interface Props {
   title: string;
   description: string;
-  /** 'map' = the landing page (fixed canvas, no footer). */
+  /** 'map' = the landing page (fixed canvas, no footer, no Ask-the-program pill: the map is busy enough, and questions come once a visitor is on a content page). */
   mode?: 'map' | 'page';
   current?: string;
   /** JSON-LD objects (see src/lib/schema.ts); rendered as one script tag per object. */
@@ -50,6 +50,6 @@ const og = new URL(url('/og.png'), Astro.site);
   <Nav current={current} />
   <slot />
   {mode === 'page' && <Footer />}
-  <AskProgram />
+  {mode !== 'map' && <AskProgram />}
 </body>
 </html>
